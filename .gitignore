@@ -137,3 +137,36 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# Terraform
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+**/.terraform/*
+*.tfstate.*
+*.tfvars.json
+
+# Astro
+dist/
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Ignore override files
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
