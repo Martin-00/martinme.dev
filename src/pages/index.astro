@@ -1,48 +1,164 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 5);
 ---
 
 <!doctype html>
 <html lang="en">
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} />
+		<style>
+			.hero {
+				padding: 0.5em 0 1em;
+			}
+			.hero .accent {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			.smallcaps {
+				font-variant: small-caps;
+				font-weight: 600;
+				letter-spacing: 0.05em;
+				color: rgba(255, 255, 255, 0.8);
+			}
+			.nav-text {
+				font-size: 0.92em;
+				color: rgba(255, 255, 255, 0.6);
+				margin-top: 1em;
+			}
+			.nav-text a {
+				text-decoration-thickness: 1px;
+			}
+			hr.section-break {
+				border: none;
+				border-top: 1px dotted rgba(255, 255, 255, 0.15);
+				margin: 1.5em 0;
+			}
+			.section-title {
+				font-size: 1.15em;
+				margin-bottom: 0.5em;
+				padding-bottom: 0.2em;
+				display: inline-block;
+				font-weight: 600;
+				font-variant: small-caps;
+			}
+			.recent-posts ul {
+				list-style: none;
+				padding: 0;
+			}
+			.recent-posts li {
+				padding: 0.5em 0;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			}
+			.recent-posts li:last-child {
+				border-bottom: none;
+			}
+			.recent-posts li a {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				text-decoration: none;
+				gap: 1em;
+				transition: color 0.15s ease;
+			}
+			.recent-posts li a:hover .post-title {
+				color: var(--accent);
+			}
+			.post-title {
+				font-weight: 600;
+				color: #ffffff;
+				margin: 0;
+				transition: color 0.15s ease;
+			}
+			.post-date {
+				font-size: 0.8em;
+				color: rgba(255, 255, 255, 0.35);
+				white-space: nowrap;
+			}
+			.all-posts {
+				margin-top: 0.75em;
+				font-size: 0.9em;
+			}
+			@media (max-width: 720px) {
+				.recent-posts li a {
+					flex-direction: column;
+					gap: 0.15em;
+				}
+			}
+		</style>
 	</head>
 	<body>
 		<Header />
 		<main>
-			<h1>🧑‍🚀 Hello, Astronaut!</h1>
-			<p>
-				Welcome to the official <a href="https://astro.build/">Astro</a> blog starter template. This template
-				serves as a lightweight, minimally-styled starting point for anyone looking to build a personal
-				website, blog, or portfolio with Astro.
-			</p>
-			<p>
-				This template comes with a few integrations already configured in your
-				<code>astro.config.mjs</code> file. You can customize your setup with
-				<a href="https://astro.build/integrations">Astro Integrations</a> to add tools like Tailwind,
-				React, or Vue to your project.
-			</p>
-			<p>Here are a few ideas on how to get started with the template:</p>
-			<ul>
-				<li>Edit this page in <code>src/pages/index.astro</code></li>
-				<li>Edit the site header items in <code>src/components/Header.astro</code></li>
-				<li>Add your name to the footer in <code>src/components/Footer.astro</code></li>
-				<li>Check out the included blog posts in <code>src/content/blog/</code></li>
-				<li>Customize the blog post page layout in <code>src/layouts/BlogPost.astro</code></li>
-			</ul>
-			<p>
-				Have fun! If you get stuck, remember to
-				<a href="https://docs.astro.build/">read the docs</a>
-				or <a href="https://astro.build/chat">join us on Discord</a> to ask questions.
-			</p>
-			<p>
-				Looking for a blog template with a bit more personality? Check out
-				<a href="https://github.com/Charca/astro-blog-template">astro-blog-template</a>
-				by <a href="https://twitter.com/Charca">Maxi Ferreira</a>.
-			</p>
+			<section class="hero">
+				<p>
+					This is the website of <strong>Martin M. E.</strong> I am a
+					<span class="accent">Data Engineer</span> at <a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>,
+					an AWS consulting company where I help clients build, migrate, and optimize their
+					data infrastructure in the cloud. I am based in Monterrey, Mexico.
+				</p>
+				<p>
+					I think in systems, tradeoffs, and diagrams. I build data pipelines, migrate databases,
+					and design architectures that scale. I care about understanding <em>why</em> a solution
+					works, not just how to implement it. I believe real engineering is about grabbing existing
+					blocks and snapping them together to create something new, and that the superpower behind
+					every great system isn't genius but iteration: write a small piece, test it, fix it, add
+					more. My work spans OpenSearch, Kafka, DynamoDB, Kubernetes, Terraform, and the broader
+					AWS ecosystem.
+				</p>
+				<p>
+					I care about design as much as function. I think aesthetics are a core element of
+					engineering, not decoration applied after the real work is done. A well-designed interface
+					reduces cognitive load. A beautifully structured codebase is easier to maintain. The form
+					and the function are inseparable.
+				</p>
+				<p>
+					Beyond engineering, I think about AI, animal welfare, open data for public good,
+					and the question of how technology can reduce suffering rather than scale it.
+					When I'm not at a terminal, I'm probably cycling, studying for my next AWS certification,
+					or going deep on whatever concept caught my curiosity this week.
+				</p>
+				<p class="nav-text">
+					<span class="smallcaps">Navigation:</span>
+					For my technical writing, see the <a href="/blog">blog</a>;
+					for background and philosophy, see the <a href="/about">about page</a>;
+					for code, see <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
+				</p>
+				<p class="nav-text">
+					<span class="smallcaps">Tools & technologies:</span>
+					AWS, Python, Terraform, OpenSearch, SQL, Docker, Kafka, DynamoDB, S3,
+					CloudFront, Glue, Athena, Lambda, Kubernetes.
+				</p>
+			</section>
+
+			<hr class="section-break" />
+
+			<section class="recent-posts">
+				<h3 class="section-title">Recent writing</h3>
+				<ul>
+					{
+						posts.map((post) => (
+							<li>
+								<a href={`/blog/${post.id}/`}>
+									<span class="post-title">{post.data.title}</span>
+									<span class="post-date">
+										<FormattedDate date={post.data.pubDate} />
+									</span>
+								</a>
+							</li>
+						))
+					}
+				</ul>
+				<p class="all-posts"><a href="/blog">All posts &rarr;</a></p>
+			</section>
 		</main>
 		<Footer />
 	</body>
