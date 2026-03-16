@@ -1,13 +1,17 @@
 ---
 import type { CollectionEntry } from 'astro:content';
+import type { MarkdownHeading } from 'astro';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 
-type Props = CollectionEntry<'blog'>['data'];
+interface Props extends CollectionEntry<'blog'>['data'] {
+	headings?: MarkdownHeading[];
+}
 
-const { title, description, pubDate, updatedDate } = Astro.props;
+const { title, description, pubDate, updatedDate, headings = [] } = Astro.props;
+const tocHeadings = headings.filter((h) => h.depth <= 2);
 ---
 
 <html lang="en">
@@ -40,12 +44,82 @@ const { title, description, pubDate, updatedDate } = Astro.props;
 			.prose :global(li) {
 				color: #f0f0f0;
 			}
+
+			/* Table of Contents */
+			.toc {
+				margin: 0 0 2em 0;
+				padding: 1.25em 1.5em;
+				background: rgba(255, 255, 255, 0.03);
+				border: 1px solid rgba(255, 255, 255, 0.08);
+				border-radius: 6px;
+			}
+			.toc-title {
+				font-size: 0.8em;
+				font-weight: 600;
+				font-variant: small-caps;
+				letter-spacing: 0.08em;
+				color: rgba(255, 255, 255, 0.5);
+				margin: 0 0 0.6em 0;
+			}
+			.toc ol {
+				margin: 0;
+				padding: 0 0 0 1.25em;
+				list-style: decimal;
+			}
+			.toc li {
+				margin: 0.2em 0;
+				font-size: 0.88em;
+				line-height: 1.4;
+			}
+			.toc a {
+				color: rgba(255, 255, 255, 0.7);
+				text-decoration: none;
+			}
+			.toc a:hover {
+				color: var(--accent);
+			}
+
+			/* Section spacing */
+			.prose :global(h2) {
+				margin-top: 2.5em;
+				padding-top: 1.5em;
+				border-top: 1px dotted rgba(255, 255, 255, 0.1);
+			}
+			.prose :global(h3) {
+				margin-top: 1.8em;
+			}
+
+			/* Back to top */
+			.back-to-top {
+				position: fixed;
+				bottom: 2em;
+				right: 2em;
+				width: 2.5em;
+				height: 2.5em;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				background: rgba(10, 15, 30, 0.8);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				border-radius: 50%;
+				color: rgba(255, 255, 255, 0.5);
+				text-decoration: none;
+				font-size: 1.1em;
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+				transition: color 0.15s ease, border-color 0.15s ease;
+				z-index: 100;
+			}
+			.back-to-top:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
 		</style>
 	</head>
 
 	<body>
 		<Header />
-		<main>
+		<main id="top">
 			<article class="glass-card">
 				<div class="prose">
 					<div class="title">
@@ -62,10 +136,23 @@ const { title, description, pubDate, updatedDate } = Astro.props;
 						<h1>{title}</h1>
 						<hr />
 					</div>
+					{tocHeadings.length > 3 && (
+						<nav class="toc">
+							<p class="toc-title">Contents</p>
+							<ol>
+								{tocHeadings.map((h) => (
+									<li>
+										<a href={`#${h.slug}`}>{h.text}</a>
+									</li>
+								))}
+							</ol>
+						</nav>
+					)}
 					<slot />
 				</div>
 			</article>
 		</main>
+		<a href="#top" class="back-to-top" aria-label="Back to top">&uarr;</a>
 		<Footer />
 	</body>
 </html>
