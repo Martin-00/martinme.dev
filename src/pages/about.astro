@@ -1,63 +1,81 @@
 ---
-import AboutHeroImage from '../assets/blog-placeholder-about.jpg';
-import Layout from '../layouts/BlogPost.astro';
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
 ---
 
-<Layout
-	title="About Me"
-	description="Lorem ipsum dolor sit amet"
-	pubDate={new Date('August 08 2021')}
-	heroImage={AboutHeroImage}
->
-	<p>
-		Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut
-		labore et dolore magna aliqua. Vitae ultricies leo integer malesuada nunc vel risus commodo
-		viverra. Adipiscing enim eu turpis egestas pretium. Euismod elementum nisi quis eleifend quam
-		adipiscing. In hac habitasse platea dictumst vestibulum. Sagittis purus sit amet volutpat. Netus
-		et malesuada fames ac turpis egestas. Eget magna fermentum iaculis eu non diam phasellus
-		vestibulum lorem. Varius sit amet mattis vulputate enim. Habitasse platea dictumst quisque
-		sagittis. Integer quis auctor elit sed vulputate mi. Dictumst quisque sagittis purus sit amet.
-	</p>
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title="About - Martin M. E." description="Data Engineer, deep thinker, and relentless learner based in Monterrey, Mexico." />
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="glass-card">
+				<h1>About me</h1>
 
-	<p>
-		Morbi tristique senectus et netus. Id semper risus in hendrerit gravida rutrum quisque non
-		tellus. Habitasse platea dictumst quisque sagittis purus sit amet. Tellus molestie nunc non
-		blandit massa. Cursus vitae congue mauris rhoncus. Accumsan tortor posuere ac ut. Fringilla urna
-		porttitor rhoncus dolor. Elit ullamcorper dignissim cras tincidunt lobortis. In cursus turpis
-		massa tincidunt dui ut ornare lectus. Integer feugiat scelerisque varius morbi enim nunc.
-		Bibendum neque egestas congue quisque egestas diam. Cras ornare arcu dui vivamus arcu felis
-		bibendum. Dignissim suspendisse in est ante in nibh mauris. Sed tempus urna et pharetra pharetra
-		massa massa ultricies mi.
-	</p>
+				<p>
+					I'm Martin, a Data Engineer at <a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>,
+					an AWS consulting company where I help clients build, migrate, and optimize their data infrastructure in the cloud.
+				</p>
 
-	<p>
-		Mollis nunc sed id semper risus in. Convallis a cras semper auctor neque. Diam sit amet nisl
-		suscipit. Lacus viverra vitae congue eu consequat ac felis donec. Egestas integer eget aliquet
-		nibh praesent tristique magna sit amet. Eget magna fermentum iaculis eu non diam. In vitae
-		turpis massa sed elementum. Tristique et egestas quis ipsum suspendisse ultrices. Eget lorem
-		dolor sed viverra ipsum. Vel turpis nunc eget lorem dolor sed viverra. Posuere ac ut consequat
-		semper viverra nam. Laoreet suspendisse interdum consectetur libero id faucibus. Diam phasellus
-		vestibulum lorem sed risus ultricies tristique. Rhoncus dolor purus non enim praesent elementum
-		facilisis. Ultrices tincidunt arcu non sodales neque. Tempus egestas sed sed risus pretium quam
-		vulputate. Viverra suspendisse potenti nullam ac tortor vitae purus faucibus ornare. Fringilla
-		urna porttitor rhoncus dolor purus non. Amet dictum sit amet justo donec enim.
-	</p>
+				<p>
+					I'm based in Monterrey, Mexico. Spanish is my native language, and I'm fully
+					proficient in English.
+				</p>
 
-	<p>
-		Mattis ullamcorper velit sed ullamcorper morbi tincidunt. Tortor posuere ac ut consequat semper
-		viverra. Tellus mauris a diam maecenas sed enim ut sem viverra. Venenatis urna cursus eget nunc
-		scelerisque viverra mauris in. Arcu ac tortor dignissim convallis aenean et tortor at. Curabitur
-		gravida arcu ac tortor dignissim convallis aenean et tortor. Egestas tellus rutrum tellus
-		pellentesque eu. Fusce ut placerat orci nulla pellentesque dignissim enim sit amet. Ut enim
-		blandit volutpat maecenas volutpat blandit aliquam etiam. Id donec ultrices tincidunt arcu. Id
-		cursus metus aliquam eleifend mi.
-	</p>
+				<h2>What I do</h2>
 
-	<p>
-		Tempus quam pellentesque nec nam aliquam sem. Risus at ultrices mi tempus imperdiet. Id porta
-		nibh venenatis cras sed felis eget velit. Ipsum a arcu cursus vitae. Facilisis magna etiam
-		tempor orci eu lobortis elementum. Tincidunt dui ut ornare lectus sit. Quisque non tellus orci
-		ac. Blandit libero volutpat sed cras. Nec tincidunt praesent semper feugiat nibh sed pulvinar
-		proin gravida. Egestas integer eget aliquet nibh praesent tristique magna.
-	</p>
-</Layout>
+				<p>
+					My work lives at the intersection of data engineering and cloud architecture. I've worked on
+					OpenSearch implementations with complex parent-child data models, database migrations with zero-downtime
+					cutovers, Kubernetes-based data platforms, QuickSight analytics layers, and more. Each project
+					teaches me something new about how data moves through systems at scale.
+				</p>
+
+				<p>
+					I think in tradeoffs. There's rarely an absolute best option in engineering, only
+					the right option for <em>this</em> context, <em>these</em> constraints, <em>this</em> team.
+					I care about understanding why a solution works, not just how to implement it.
+				</p>
+
+				<h2>How I think</h2>
+
+				<p>
+					I believe in breaking problems into smaller parts, thinking in diagrams, and always delivering
+					something. If a task isn't practical yet, I build a document. If I don't know something, I
+					go learn it. My approach is: roadmaps, checklists, requirements. Then iterate.
+				</p>
+
+				<p>
+					I'm deeply influenced by Martin Kleppmann's <em>Designing Data-Intensive Applications</em>
+					and the philosophy that real engineering is about grabbing existing blocks and snapping them
+					together to create something new. The superpower isn't genius. It's iteration.
+				</p>
+
+				<h2>Beyond work</h2>
+
+				<p>
+					When I'm not engineering, I'm probably on my bike, studying for my next AWS certification,
+					exploring business ideas, or diving into whatever topic grabbed my attention that week.
+					I care about mental health, continuous learning, and building things that matter.
+				</p>
+
+				<h2>This site</h2>
+
+				<p>
+					This website is deployed on AWS using S3, CloudFront, ACM, and Route 53, all managed
+					with Terraform and deployed via GitHub Actions with OIDC authentication. No long-lived keys,
+					no manual deploys, zero-trust CI/CD. The whole thing costs about $0.51/month.
+				</p>
+
+				<p>
+					Built with <a href="https://astro.build/" target="_blank" rel="noopener noreferrer">Astro</a>.
+					Source on <a href="https://github.com/Martin-00/martinme.dev" target="_blank" rel="noopener noreferrer">GitHub</a>.
+				</p>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
