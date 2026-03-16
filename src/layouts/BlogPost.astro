@@ -25,8 +25,8 @@ const tocHeadings = headings.filter((h) => h.depth <= 2);
 				padding: 1em 0;
 			}
 			.title {
-				margin-bottom: 1em;
-				padding: 1em 0;
+				margin-bottom: 0.5em;
+				padding: 0.5em 0;
 				text-align: center;
 				line-height: 1;
 			}
@@ -47,11 +47,20 @@ const tocHeadings = headings.filter((h) => h.depth <= 2);
 
 			/* Table of Contents */
 			.toc {
-				margin: 0 0 2em 0;
-				padding: 1.25em 1.5em;
+				float: left;
+				margin: 0 1.5em 1em 0;
+				padding: 1em 1.25em;
 				background: rgba(255, 255, 255, 0.03);
 				border: 1px solid rgba(255, 255, 255, 0.08);
 				border-radius: 6px;
+				max-width: 45%;
+			}
+			@media (max-width: 720px) {
+				.toc {
+					float: none;
+					max-width: 100%;
+					margin: 0 0 1em 0;
+				}
 			}
 			.toc-title {
 				font-size: 0.8em;
