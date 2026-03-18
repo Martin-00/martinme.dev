@@ -1,8 +1,13 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
+import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
 <!doctype html>
@@ -115,6 +120,39 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 			.project-card.coming-soon:hover .card-title {
 				color: rgba(255, 255, 255, 0.35);
 			}
+			.writings-section {
+				margin-top: 1.25em;
+				padding-top: 1em;
+				border-top: 1px dotted rgba(255, 255, 255, 0.1);
+			}
+			.writings-section h3 {
+				font-size: 1em;
+				font-variant: small-caps;
+				font-weight: 600;
+				margin: 0 0 0.5em 0;
+			}
+			.writings-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.writings-list li {
+				padding: 0.3em 0;
+			}
+			.writings-list a {
+				text-decoration: none;
+				font-size: 0.9em;
+				color: rgba(255, 255, 255, 0.8);
+				transition: color 0.15s ease;
+			}
+			.writings-list a:hover {
+				color: var(--accent);
+			}
+			.writings-list .date {
+				font-size: 0.75em;
+				color: rgba(255, 255, 255, 0.3);
+				margin-left: 0.5em;
+			}
 			@media (max-width: 720px) {
 				.layout {
 					flex-direction: column;
@@ -155,18 +193,17 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 							Beyond engineering, I'm a deeply curious person. I fall into rabbit holes
 							about geography, history, the universe, human inventions, and whatever
 							mystery grabbed my attention this week. I love cinema and film theory, music
-							that means something (Pink Floyd, Zoe, Soda Stereo, Residente), art,
-							architecture, and the scientific method as a way of life: question your
-							conclusions, question whether you're asking the right question, update when
-							the evidence says so.
+							that carries meaning, art, architecture, and the scientific method as a way
+							of life: question your conclusions, question whether you're asking the right
+							question, update when the evidence says so.
 						</p>
 						<p>
 							I also love sports: cycling, running, soccer, bodyweight training. The feeling
-							of pushing energy through muscle and competing against yourself.
+							of pushing energy through muscle, competing, and helping others grow.
 						</p>
 						<p class="nav-text">
 							<span class="smallcaps">Navigation:</span>
-							For my technical writing, see the <a href="/blog">blog</a>;
+							For my technical writing, see <a href="/blog">writings</a>;
 							for background and philosophy, see the <a href="/about">about page</a>;
 							for code, see <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
 						</p>
@@ -188,6 +225,22 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 							<p class="card-desc">More is being built.</p>
 						</div>
 					</div>
+				</div>
+
+				<div class="writings-section">
+					<h3>Top Writings</h3>
+					<ul class="writings-list">
+						{
+							posts.map((post) => (
+								<li>
+									<a href={`/blog/${post.id}/`}>
+										{post.data.title}
+										<span class="date"><FormattedDate date={post.data.pubDate} /></span>
+									</a>
+								</li>
+							))
+						}
+					</ul>
 				</div>
 			</div>
 		</main>
