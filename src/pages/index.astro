@@ -202,7 +202,7 @@ const posts = (await getCollection('blog'))
 						</p>
 						<p class="nav-text">
 							<span class="smallcaps">Navigation:</span>
-							For my technical writing, see <a href="/blog">writings</a>;
+							For my technical writing, see <a href="/writings">writings</a>;
 							for background and philosophy, see the <a href="/about">about page</a>;
 							for code, see <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
 						</p>
@@ -215,7 +215,7 @@ const posts = (await getCollection('blog'))
 
 					<div class="projects-col">
 						<h2>Projects</h2>
-						<a href="/blog" class="project-card">
+						<a href="/writings" class="project-card">
 							<p class="card-title">Writings</p>
 							<p class="card-desc">Technical and philosophical.</p>
 						</a>
@@ -232,7 +232,7 @@ const posts = (await getCollection('blog'))
 						{
 							posts.map((post) => (
 								<li>
-									<a href={`/blog/${post.id}/`}>
+									<a href={`/writings/${post.id}/`}>
 										{post.data.title}
 										<span class="date"><FormattedDate date={post.data.pubDate} /></span>
 									</a>
