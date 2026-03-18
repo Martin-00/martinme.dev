@@ -1,6 +1,6 @@
 ---
-title: 'Heuristics for building things that matter'
-description: 'Principles for building, thinking, and deciding. About engineering, business, life, and getting things from not-existing to existing.'
+title: 'Ideas worth carrying'
+description: 'Beliefs, principles, and ways of thinking that I keep coming back to. About building, deciding, learning, and trying to leave things better than I found them.'
 pubDate: 'Mar 14 2026'
 updatedDate: 'Mar 18 2026'
 ---
@@ -119,6 +119,6 @@ This is why documentation matters. This is why compound investments matter. This
 
 ---
 
-None of these are original. They're patterns absorbed from Kleppmann, from consulting work, from open-source communities, from making mistakes, from reading widely, and from conversations with minds very different from my own. I write them down because writing forces clarity, and because the best ideas are the ones you can share.
+These ideas come from many places: Kleppmann, consulting work, open-source communities, mistakes, reading widely, and conversations with minds very different from my own. What I've added is the combination, the lived experience of applying them, and the act of writing them down. I share them because the best ideas grow when they travel.
 
 If even one of these saves someone an hour of spinning, or helps them cross the gap between "I could build this" and "I am building this," the post was worth writing.
