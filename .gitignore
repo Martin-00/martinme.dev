@@ -176,3 +176,7 @@ CLAUDE.md
 .claude/
 
 .envrc
+
+# Scripts (local pre-computation, venvs)
+scripts/.venv/
+scripts/__pycache__/

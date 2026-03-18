@@ -1,0 +1,312 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title="Mexico Cartogram - martinme.dev"
+			description="Interactive population cartogram of Mexico. Land area distorted by population, colored by political party, HDI, or population."
+		/>
+		<style>
+			.cartogram-header {
+				text-align: center;
+				margin-bottom: 1em;
+			}
+			.cartogram-header h1 {
+				font-size: 1.6em;
+				margin: 0 0 0.2em;
+			}
+			.cartogram-header .subtitle {
+				font-size: 0.9em;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.controls {
+				display: flex;
+				justify-content: center;
+				gap: 1em;
+				margin-bottom: 1em;
+				flex-wrap: wrap;
+			}
+			.controls button {
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				color: rgba(255, 255, 255, 0.7);
+				padding: 0.4em 1em;
+				font-family: 'Source Serif', Georgia, serif;
+				font-size: 0.8em;
+				letter-spacing: 0.05em;
+				cursor: pointer;
+				transition: all 0.15s ease;
+			}
+			.controls button:hover {
+				background: rgba(255, 255, 255, 0.08);
+				color: var(--accent);
+			}
+			.controls button.active {
+				background: rgba(251, 191, 36, 0.1);
+				border-color: var(--accent);
+				color: var(--accent);
+			}
+			#map-container {
+				width: 100%;
+				display: flex;
+				justify-content: center;
+			}
+			#map-container svg {
+				max-width: 100%;
+				height: auto;
+			}
+			.tooltip {
+				position: absolute;
+				background: rgba(5, 10, 25, 0.92);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				border-radius: 4px;
+				padding: 0.5em 0.75em;
+				font-size: 0.8em;
+				color: #f0f0f0;
+				pointer-events: none;
+				opacity: 0;
+				transition: opacity 0.15s ease;
+				z-index: 200;
+				backdrop-filter: blur(8px);
+				-webkit-backdrop-filter: blur(8px);
+			}
+			.tooltip .tt-name {
+				font-weight: 600;
+				margin-bottom: 0.2em;
+			}
+			.tooltip .tt-value {
+				color: rgba(255, 255, 255, 0.65);
+				font-size: 0.9em;
+			}
+			.legend {
+				display: flex;
+				justify-content: center;
+				gap: 1em;
+				margin-top: 0.75em;
+				flex-wrap: wrap;
+				font-size: 0.75em;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.legend-item {
+				display: flex;
+				align-items: center;
+				gap: 0.35em;
+			}
+			.legend-swatch {
+				width: 12px;
+				height: 12px;
+				border-radius: 2px;
+			}
+			.map-toggle {
+				display: flex;
+				justify-content: center;
+				gap: 0.5em;
+				margin-bottom: 0.75em;
+			}
+			.map-toggle button {
+				background: rgba(255, 255, 255, 0.03);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				color: rgba(255, 255, 255, 0.5);
+				padding: 0.3em 0.8em;
+				font-family: 'Source Serif', Georgia, serif;
+				font-size: 0.75em;
+				cursor: pointer;
+				transition: all 0.15s ease;
+			}
+			.map-toggle button.active {
+				background: rgba(255, 255, 255, 0.06);
+				border-color: rgba(255, 255, 255, 0.25);
+				color: #f0f0f0;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="glass-card">
+				<div class="cartogram-header">
+					<h1>Mexico Cartogram</h1>
+					<p class="subtitle">Land area distorted by population. 32 states, Census 2020.</p>
+				</div>
+
+				<div class="map-toggle">
+					<button id="btn-cartogram" class="active">Cartogram</button>
+					<button id="btn-normal">Normal map</button>
+				</div>
+
+				<div class="controls">
+					<button class="active" data-variable="party_2024">2024 Election</button>
+					<button data-variable="population">Population</button>
+					<button data-variable="hdi">HDI</button>
+				</div>
+
+				<div id="map-container"></div>
+				<div id="legend" class="legend"></div>
+				<div class="tooltip" id="tooltip"></div>
+			</div>
+		</main>
+		<Footer />
+
+		<script>
+			import * as d3 from 'd3';
+
+			const width = 900;
+			const height = 600;
+
+			let currentData = 'cartogram';
+			let currentVariable = 'party_2024';
+			let cartogramGeo: any = null;
+			let normalGeo: any = null;
+
+			const partyColors: Record<string, string> = {
+				'MORENA': '#8B1A1A',
+				'PAN': '#1E3A8A',
+				'MC': '#F97316',
+			};
+
+			const svg = d3.select('#map-container')
+				.append('svg')
+				.attr('viewBox', `0 0 ${width} ${height}`)
+				.attr('preserveAspectRatio', 'xMidYMid meet');
+
+			const tooltip = d3.select('#tooltip');
+
+			async function loadData() {
+				const [cartRes, normRes] = await Promise.all([
+					fetch('/data/mexico-cartogram.geojson'),
+					fetch('/data/mexico-normal.geojson')
+				]);
+				cartogramGeo = await cartRes.json();
+				normalGeo = await normRes.json();
+				render();
+			}
+
+			function getColor(d: any): string {
+				const props = d.properties;
+				if (currentVariable === 'party_2024') {
+					return partyColors[props.party_2024] || '#666';
+				} else if (currentVariable === 'population') {
+					const scale = d3.scaleSequential(d3.interpolateYlOrRd)
+						.domain([500000, 17000000]);
+					return scale(props.population);
+				} else if (currentVariable === 'hdi') {
+					const scale = d3.scaleSequential(d3.interpolateRdYlGn)
+						.domain([0.65, 0.87]);
+					return scale(props.hdi);
+				}
+				return '#666';
+			}
+
+			function formatValue(props: any): string {
+				if (currentVariable === 'party_2024') return props.party_2024;
+				if (currentVariable === 'population') return props.population.toLocaleString();
+				if (currentVariable === 'hdi') return props.hdi.toFixed(3);
+				return '';
+			}
+
+			function getLabel(): string {
+				if (currentVariable === 'party_2024') return '2024 Winner';
+				if (currentVariable === 'population') return 'Population';
+				if (currentVariable === 'hdi') return 'HDI';
+				return '';
+			}
+
+			function renderLegend() {
+				const legend = d3.select('#legend');
+				legend.html('');
+				if (currentVariable === 'party_2024') {
+					Object.entries(partyColors).forEach(([party, color]) => {
+						legend.append('div').attr('class', 'legend-item')
+							.html(`<div class="legend-swatch" style="background:${color}"></div>${party}`);
+					});
+				} else if (currentVariable === 'population') {
+					const steps = [1000000, 5000000, 10000000, 17000000];
+					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([500000, 17000000]);
+					steps.forEach(v => {
+						legend.append('div').attr('class', 'legend-item')
+							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${(v/1000000).toFixed(0)}M`);
+					});
+				} else if (currentVariable === 'hdi') {
+					const steps = [0.67, 0.72, 0.77, 0.82, 0.86];
+					const scale = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.65, 0.87]);
+					steps.forEach(v => {
+						legend.append('div').attr('class', 'legend-item')
+							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${v.toFixed(2)}`);
+					});
+				}
+			}
+
+			function render() {
+				const geo = currentData === 'cartogram' ? cartogramGeo : normalGeo;
+				if (!geo) return;
+
+				const projection = d3.geoMercator().fitSize([width, height], geo);
+				const path = d3.geoPath().projection(projection);
+
+				svg.selectAll('path').remove();
+
+				svg.selectAll('path')
+					.data(geo.features)
+					.join('path')
+					.attr('d', path as any)
+					.attr('fill', (d: any) => getColor(d))
+					.attr('stroke', 'rgba(255,255,255,0.2)')
+					.attr('stroke-width', 0.5)
+					.on('mouseover', function(event: MouseEvent, d: any) {
+						d3.select(this)
+							.attr('stroke', '#fbbf24')
+							.attr('stroke-width', 2)
+							.raise();
+						tooltip.style('opacity', 1)
+							.html(`<div class="tt-name">${d.properties.name}</div>
+								<div class="tt-value">${getLabel()}: ${formatValue(d.properties)}</div>
+								<div class="tt-value">Pop: ${d.properties.population.toLocaleString()}</div>`);
+					})
+					.on('mousemove', function(event: MouseEvent) {
+						tooltip
+							.style('left', (event.pageX + 12) + 'px')
+							.style('top', (event.pageY - 10) + 'px');
+					})
+					.on('mouseout', function() {
+						d3.select(this)
+							.attr('stroke', 'rgba(255,255,255,0.2)')
+							.attr('stroke-width', 0.5);
+						tooltip.style('opacity', 0);
+					});
+
+				renderLegend();
+			}
+
+			// Variable buttons
+			document.querySelectorAll('.controls button').forEach(btn => {
+				btn.addEventListener('click', () => {
+					document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
+					btn.classList.add('active');
+					currentVariable = btn.getAttribute('data-variable') || 'party_2024';
+					render();
+				});
+			});
+
+			// Map toggle
+			document.getElementById('btn-cartogram')?.addEventListener('click', () => {
+				currentData = 'cartogram';
+				document.getElementById('btn-cartogram')?.classList.add('active');
+				document.getElementById('btn-normal')?.classList.remove('active');
+				render();
+			});
+			document.getElementById('btn-normal')?.addEventListener('click', () => {
+				currentData = 'normal';
+				document.getElementById('btn-normal')?.classList.add('active');
+				document.getElementById('btn-cartogram')?.classList.remove('active');
+				render();
+			});
+
+			loadData();
+		</script>
+	</body>
+</html>
