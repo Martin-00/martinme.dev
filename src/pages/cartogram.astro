@@ -271,28 +271,33 @@ import Header from '../components/Header.astro';
 				return `${levelMode}-${mapMode === 'cartogram' ? 'cartogram' : 'normal'}`;
 			}
 
+			// Property accessors: mun files use short keys (n,p,e,c), state files use full names
+			function getPop(d: any): number {
+				return d.properties.p || d.properties.population || 0;
+			}
+			function getEnt(d: any): string {
+				return d.properties.e || d.properties.CVE_ENT || d.properties.id || '00';
+			}
+			function getName(d: any): string {
+				return d.properties.n || d.properties.NOMGEO || d.properties.name || 'Unknown';
+			}
+
 			function getColor(d: any): string {
-				const props = d.properties;
 				if (colorVar === 'population') {
 					const maxPop = levelMode === 'mun' ? 2000000 : 17000000;
 					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxPop]);
-					return scale(props.population || 0);
+					return scale(getPop(d));
 				} else if (colorVar === 'state') {
-					const ent = props.CVE_ENT || props.id || '00';
-					const idx = (parseInt(ent) - 1) % stateColors.length;
+					const idx = (parseInt(getEnt(d)) - 1) % stateColors.length;
 					return stateColors[idx];
 				} else if (colorVar === 'party_2024') {
 					const colors: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
-					return colors[props.party_2024] || '#666';
+					return colors[d.properties.party_2024] || '#666';
 				} else if (colorVar === 'hdi') {
 					const scale = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.65, 0.87]);
-					return scale(props.hdi || 0.75);
+					return scale(d.properties.hdi || 0.75);
 				}
 				return '#666';
-			}
-
-			function getName(d: any): string {
-				return d.properties.NOMGEO || d.properties.name || 'Unknown';
 			}
 
 			function renderLegend() {
@@ -340,7 +345,7 @@ import Header from '../components/Header.astro';
 							.attr('stroke', '#fbbf24')
 							.attr('stroke-width', levelMode === 'mun' ? 1 : 2)
 							.raise();
-						const pop = d.properties.population;
+						const pop = getPop(d);
 						tooltip.style('opacity', 1)
 							.html(`<div class="tt-name">${getName(d)}</div>
 								<div class="tt-value">Pop: ${pop ? pop.toLocaleString() : 'N/A'}</div>`);
