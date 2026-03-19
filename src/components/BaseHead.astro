@@ -5,11 +5,12 @@ import { SITE_TITLE } from '../consts';
 interface Props {
 	title: string;
 	description: string;
+	keywords?: string;
 }
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site);
 
-const { title, description } = Astro.props;
+const { title, description, keywords } = Astro.props;
 ---
 
 <!-- Global Metadata -->
@@ -37,15 +38,38 @@ const { title, description } = Astro.props;
 <title>{title}</title>
 <meta name="title" content={title} />
 <meta name="description" content={description} />
+{keywords && <meta name="keywords" content={keywords} />}
+<meta name="author" content="Martin Morales Estrada" />
+<meta name="robots" content="index, follow" />
 
 <!-- Open Graph / Facebook -->
 <meta property="og:type" content="website" />
 <meta property="og:url" content={Astro.url} />
 <meta property="og:title" content={title} />
 <meta property="og:description" content={description} />
+<meta property="og:site_name" content={SITE_TITLE} />
+<meta property="og:locale" content="en_US" />
 
 <!-- Twitter -->
 <meta property="twitter:card" content="summary" />
 <meta property="twitter:url" content={Astro.url} />
 <meta property="twitter:title" content={title} />
 <meta property="twitter:description" content={description} />
+
+<!-- Structured Data (JSON-LD) -->
+<script type="application/ld+json" set:html={JSON.stringify({
+	"@context": "https://schema.org",
+	"@type": "WebSite",
+	"name": SITE_TITLE,
+	"url": Astro.site,
+	"author": {
+		"@type": "Person",
+		"name": "Martin Morales Estrada",
+		"url": Astro.site,
+		"jobTitle": "Data Engineer",
+		"sameAs": [
+			"https://github.com/Martin-00",
+			"https://www.linkedin.com/in/martinmoralesestrada/"
+		]
+	}
+})} />

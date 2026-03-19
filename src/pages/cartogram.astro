@@ -8,9 +8,29 @@ import Header from '../components/Header.astro';
 <html lang="en">
 	<head>
 		<BaseHead
-			title="Mexico Cartogram - martinme.dev"
-			description="Interactive population cartogram of Mexico at state and municipio level. Land area distorted by population."
+			title="Mexico Cartogram - Interactive Population Map by Municipio"
+			description="Interactive population cartogram of Mexico showing 2,476 municipios distorted by Census 2020 population. Toggle between cartogram and normal map. Color by population, state, election results. Built with D3.js and INEGI data."
+			keywords="mexico cartogram, cartograma mexico, mexico population map, mexico municipios map, INEGI census 2020, mexico interactive map, mexico data visualization, cartogram D3, mexico election map, mexico population density, Gastner-Newman cartogram"
 		/>
+		<script type="application/ld+json">
+		{
+			"@context": "https://schema.org",
+			"@type": "CreativeWork",
+			"name": "Mexico Population Cartogram",
+			"description": "Interactive cartogram of Mexico showing 2,476 municipios distorted by population from the INEGI Census 2020. Built with D3.js and the Gastner-Newman density-equalizing algorithm.",
+			"author": {
+				"@type": "Person",
+				"name": "Martin Morales Estrada"
+			},
+			"datePublished": "2026-03-19",
+			"url": "https://martinme.dev/cartogram",
+			"keywords": ["cartogram", "Mexico", "population", "INEGI", "data visualization", "D3.js", "municipios"],
+			"about": {
+				"@type": "Place",
+				"name": "Mexico"
+			}
+		}
+		</script>
 		<style>
 			.cartogram-header {
 				text-align: center;
