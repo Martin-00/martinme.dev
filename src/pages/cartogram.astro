@@ -178,13 +178,30 @@ import Header from '../components/Header.astro';
 				<div class="tooltip" id="tooltip"></div>
 
 				<div class="explanation">
-					<h2>Why cartograms matter</h2>
+					<h2>What the cartogram reveals</h2>
+					<p>
+						The massive central bulge is where Mexico's gravity lives: Ciudad de Mexico,
+						Estado de Mexico, Puebla, and Guadalajara. On a standard map, these states
+						look like they share the country equally with Chihuahua and Durango. On the
+						cartogram, they ARE Mexico. The central highlands contain more people than the
+						entire north combined.
+					</p>
+					<p>
+						Monterrey stands out clearly in the northeast, the industrial capital of
+						northern Mexico. Tijuana and Mexicali swell out of Baja California, revealing
+						the border economy that a standard map hides behind the peninsula's long, thin
+						shape. The Yucatan holds its form because Merida and Cancun carry real population
+						weight. And the vast deserts of Chihuahua, Durango, and Sonora? Compressed to
+						thin strips, because almost nobody lives there.
+					</p>
+
+					<h2>Why this matters</h2>
 					<p>
 						A standard map of Mexico allocates visual weight by land area. Chihuahua
-						dominates the north. Baja California stretches across the peninsula. But
-						Chihuahua has 3.7 million people. Estado de Mexico has 17 million. On a
-						normal map, they look roughly equal. On a cartogram, the truth becomes
-						visible: where the people actually are.
+						dominates the north. But Chihuahua has 3.7 million people. Estado de Mexico
+						has 17 million. On a normal map, they look roughly equal. A cartogram corrects
+						this by making area proportional to population: what the eye sees matches
+						where the people actually are.
 					</p>
 					<p>
 						Every policy debate, every resource allocation, every electoral analysis
@@ -194,16 +211,26 @@ import Header from '../components/Header.astro';
 					</p>
 					<p>
 						At the municipio level, the distortion is even more revealing. Within each
-						state, population concentrates in a few urban municipios while vast rural
-						territories hold very few people. Tijuana swells out of Baja California.
-						The CDMX metropolitan area becomes the center of gravity of the entire
-						country. Small rural municipios in Oaxaca and Chihuahua nearly vanish.
-						This is Mexico as its people experience it, not as its geography suggests.
+						state, population concentrates in a few urban centers while vast rural
+						territories hold very few people. Toggle between "Normal" and "Cartogram" to
+						see how dramatically the country reshapes when you measure by people instead
+						of land.
+					</p>
+
+					<h2>How it was built</h2>
+					<p>
+						This cartogram was built by a human and an AI in a single session. The
+						boundaries come from INEGI's Marco Geoestadistico 2025 (2,476 municipios).
+						The population data comes from the Census 2020 (126 million people). The
+						distortion uses the Gastner-Newman density-equalizing algorithm, computed
+						in Python with 30 iterations and 1.15% average error. The rendering is
+						D3.js, running entirely in your browser. The whole site is served from
+						AWS S3 and CloudFront for $0.51/month. No backend, no API, no server.
 					</p>
 					<p class="explanation-note">
-						Data: INEGI Marco Geoestadistico 2025 (boundaries), Census 2020 (population).
-						Built with D3.js. Cartogram algorithm: Gastner-Newman density-equalizing projection.
-						<a href="https://github.com/Martin-00/martinme.dev" target="_blank" rel="noopener noreferrer">Source code</a>.
+						<a href="https://github.com/Martin-00/martinme.dev" target="_blank" rel="noopener noreferrer">Source code on GitHub</a>.
+						Data: INEGI Marco Geoestadistico 2025, Census 2020.
+						Algorithm: Gastner-Newman density-equalizing cartogram.
 					</p>
 				</div>
 			</div>
