@@ -284,9 +284,14 @@ import Header from '../components/Header.astro';
 
 			function getColor(d: any): string {
 				if (colorVar === 'population') {
-					const maxPop = levelMode === 'mun' ? 2000000 : 17000000;
-					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxPop]);
-					return scale(getPop(d));
+					if (levelMode === 'mun') {
+						// Log scale for municipios: huge range from 81 to 1.9M
+						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
+						return scale(Math.max(500, getPop(d)));
+					} else {
+						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
+						return scale(Math.max(500000, getPop(d)));
+					}
 				} else if (colorVar === 'state') {
 					const idx = (parseInt(getEnt(d)) - 1) % stateColors.length;
 					return stateColors[idx];
@@ -304,16 +309,23 @@ import Header from '../components/Header.astro';
 				const legend = d3.select('#legend');
 				legend.html('');
 				if (colorVar === 'population') {
-					const maxPop = levelMode === 'mun' ? 2000000 : 17000000;
-					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxPop]);
-					const steps = levelMode === 'mun'
-						? [10000, 100000, 500000, 1000000, 2000000]
-						: [1000000, 5000000, 10000000, 17000000];
-					steps.forEach(v => {
-						const label = v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : `${(v/1000).toFixed(0)}K`;
-						legend.append('div').attr('class', 'legend-item')
-							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
-					});
+					if (levelMode === 'mun') {
+						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
+						const steps = [1000, 10000, 50000, 200000, 500000, 2000000];
+						steps.forEach(v => {
+							const label = v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : `${(v/1000).toFixed(0)}K`;
+							legend.append('div').attr('class', 'legend-item')
+								.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
+						});
+					} else {
+						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
+						const steps = [700000, 2000000, 5000000, 10000000, 17000000];
+						steps.forEach(v => {
+							const label = `${(v/1000000).toFixed(0)}M`;
+							legend.append('div').attr('class', 'legend-item')
+								.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
+						});
+					}
 				} else if (colorVar === 'party_2024') {
 					const parties: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
 					Object.entries(parties).forEach(([p, c]) => {
@@ -338,7 +350,7 @@ import Header from '../components/Header.astro';
 					.join('path')
 					.attr('d', path as any)
 					.attr('fill', (d: any) => getColor(d))
-					.attr('stroke', levelMode === 'mun' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)')
+					.attr('stroke', levelMode === 'mun' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)')
 					.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5)
 					.on('mouseover', function(event: MouseEvent, d: any) {
 						d3.select(this)
@@ -357,7 +369,7 @@ import Header from '../components/Header.astro';
 					})
 					.on('mouseout', function() {
 						d3.select(this)
-							.attr('stroke', levelMode === 'mun' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)')
+							.attr('stroke', levelMode === 'mun' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)')
 							.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5);
 						tooltip.style('opacity', 0);
 					});
