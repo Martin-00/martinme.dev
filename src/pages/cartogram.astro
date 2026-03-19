@@ -123,6 +123,26 @@ import Header from '../components/Header.astro';
 				padding: 3em 0;
 				font-style: italic;
 			}
+			.explanation {
+				margin-top: 2em;
+				padding-top: 1.5em;
+				border-top: 1px dotted rgba(255, 255, 255, 0.1);
+			}
+			.explanation h2 {
+				font-size: 1.2em;
+				font-variant: small-caps;
+				margin-bottom: 0.75em;
+			}
+			.explanation p {
+				font-size: 0.92em;
+				color: rgba(255, 255, 255, 0.8);
+				line-height: 1.65;
+			}
+			.explanation-note {
+				font-size: 0.8em !important;
+				color: rgba(255, 255, 255, 0.4) !important;
+				margin-top: 1.5em;
+			}
 		</style>
 	</head>
 	<body>
@@ -156,6 +176,36 @@ import Header from '../components/Header.astro';
 				</div>
 				<div id="legend" class="legend"></div>
 				<div class="tooltip" id="tooltip"></div>
+
+				<div class="explanation">
+					<h2>Why cartograms matter</h2>
+					<p>
+						A standard map of Mexico allocates visual weight by land area. Chihuahua
+						dominates the north. Baja California stretches across the peninsula. But
+						Chihuahua has 3.7 million people. Estado de Mexico has 17 million. On a
+						normal map, they look roughly equal. On a cartogram, the truth becomes
+						visible: where the people actually are.
+					</p>
+					<p>
+						Every policy debate, every resource allocation, every electoral analysis
+						that uses a standard map is starting from a distortion. Land doesn't vote.
+						Land doesn't need hospitals. Land doesn't experience poverty. People do.
+						A cartogram replaces geographic bias with demographic truth.
+					</p>
+					<p>
+						At the municipio level, the distortion is even more revealing. Within each
+						state, population concentrates in a few urban municipios while vast rural
+						territories hold very few people. Tijuana swells out of Baja California.
+						The CDMX metropolitan area becomes the center of gravity of the entire
+						country. Small rural municipios in Oaxaca and Chihuahua nearly vanish.
+						This is Mexico as its people experience it, not as its geography suggests.
+					</p>
+					<p class="explanation-note">
+						Data: INEGI Marco Geoestadistico 2025 (boundaries), Census 2020 (population).
+						Built with D3.js. Cartogram algorithm: Gastner-Newman density-equalizing projection.
+						<a href="https://github.com/Martin-00/martinme.dev" target="_blank" rel="noopener noreferrer">Source code</a>.
+					</p>
+				</div>
 			</div>
 		</main>
 		<Footer />
