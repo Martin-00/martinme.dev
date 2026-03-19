@@ -9,12 +9,12 @@ import Header from '../components/Header.astro';
 	<head>
 		<BaseHead
 			title="Mexico Cartogram - martinme.dev"
-			description="Interactive population cartogram of Mexico. Land area distorted by population, colored by political party, HDI, or population."
+			description="Interactive population cartogram of Mexico at state and municipio level. Land area distorted by population."
 		/>
 		<style>
 			.cartogram-header {
 				text-align: center;
-				margin-bottom: 1em;
+				margin-bottom: 0.75em;
 			}
 			.cartogram-header h1 {
 				font-size: 1.6em;
@@ -27,17 +27,17 @@ import Header from '../components/Header.astro';
 			.controls {
 				display: flex;
 				justify-content: center;
-				gap: 1em;
-				margin-bottom: 1em;
+				gap: 0.5em;
+				margin-bottom: 0.5em;
 				flex-wrap: wrap;
 			}
 			.controls button {
 				background: rgba(255, 255, 255, 0.05);
 				border: 1px solid rgba(255, 255, 255, 0.15);
 				color: rgba(255, 255, 255, 0.7);
-				padding: 0.4em 1em;
+				padding: 0.35em 0.9em;
 				font-family: 'Source Serif', Georgia, serif;
-				font-size: 0.8em;
+				font-size: 0.75em;
 				letter-spacing: 0.05em;
 				cursor: pointer;
 				transition: all 0.15s ease;
@@ -50,6 +50,21 @@ import Header from '../components/Header.astro';
 				background: rgba(251, 191, 36, 0.1);
 				border-color: var(--accent);
 				color: var(--accent);
+			}
+			.control-group {
+				display: flex;
+				gap: 0;
+			}
+			.control-group button {
+				margin-left: -1px;
+			}
+			.control-group button:first-child {
+				margin-left: 0;
+			}
+			.control-separator {
+				width: 1px;
+				background: rgba(255, 255, 255, 0.1);
+				margin: 0 0.75em;
 			}
 			#map-container {
 				width: 100%;
@@ -87,7 +102,7 @@ import Header from '../components/Header.astro';
 				display: flex;
 				justify-content: center;
 				gap: 1em;
-				margin-top: 0.75em;
+				margin-top: 0.5em;
 				flex-wrap: wrap;
 				font-size: 0.75em;
 				color: rgba(255, 255, 255, 0.5);
@@ -102,26 +117,11 @@ import Header from '../components/Header.astro';
 				height: 12px;
 				border-radius: 2px;
 			}
-			.map-toggle {
-				display: flex;
-				justify-content: center;
-				gap: 0.5em;
-				margin-bottom: 0.75em;
-			}
-			.map-toggle button {
-				background: rgba(255, 255, 255, 0.03);
-				border: 1px solid rgba(255, 255, 255, 0.1);
-				color: rgba(255, 255, 255, 0.5);
-				padding: 0.3em 0.8em;
-				font-family: 'Source Serif', Georgia, serif;
-				font-size: 0.75em;
-				cursor: pointer;
-				transition: all 0.15s ease;
-			}
-			.map-toggle button.active {
-				background: rgba(255, 255, 255, 0.06);
-				border-color: rgba(255, 255, 255, 0.25);
-				color: #f0f0f0;
+			.loading {
+				text-align: center;
+				color: rgba(255, 255, 255, 0.4);
+				padding: 3em 0;
+				font-style: italic;
 			}
 		</style>
 	</head>
@@ -131,21 +131,29 @@ import Header from '../components/Header.astro';
 			<div class="glass-card">
 				<div class="cartogram-header">
 					<h1>Mexico Cartogram</h1>
-					<p class="subtitle">Land area distorted by population. 32 states, Census 2020.</p>
-				</div>
-
-				<div class="map-toggle">
-					<button id="btn-cartogram" class="active">Cartogram</button>
-					<button id="btn-normal">Normal map</button>
+					<p class="subtitle">Land area distorted by population. INEGI Census 2020 + Marco Geoestadistico 2025.</p>
 				</div>
 
 				<div class="controls">
-					<button class="active" data-variable="party_2024">2024 Election</button>
-					<button data-variable="population">Population</button>
-					<button data-variable="hdi">HDI</button>
+					<div class="control-group">
+						<button id="btn-cartogram" class="active">Cartogram</button>
+						<button id="btn-normal">Normal</button>
+					</div>
+					<div class="control-separator"></div>
+					<div class="control-group">
+						<button id="btn-mun" class="active">Municipios</button>
+						<button id="btn-state">States</button>
+					</div>
+					<div class="control-separator"></div>
+					<div class="control-group">
+						<button class="color-btn active" data-variable="population">Population</button>
+						<button class="color-btn" data-variable="state">By state</button>
+					</div>
 				</div>
 
-				<div id="map-container"></div>
+				<div id="map-container">
+					<div class="loading" id="loading">Loading map data...</div>
+				</div>
 				<div id="legend" class="legend"></div>
 				<div class="tooltip" id="tooltip"></div>
 			</div>
@@ -154,95 +162,115 @@ import Header from '../components/Header.astro';
 
 		<script>
 			import * as d3 from 'd3';
+			import * as topojson from 'topojson-client';
 
-			const width = 900;
-			const height = 600;
+			const width = 960;
+			const height = 620;
 
-			let currentData = 'cartogram';
-			let currentVariable = 'party_2024';
-			let cartogramGeo: any = null;
-			let normalGeo: any = null;
+			let mapMode = 'cartogram';
+			let levelMode = 'mun';
+			let colorVar = 'population';
 
-			const partyColors: Record<string, string> = {
-				'MORENA': '#8B1A1A',
-				'PAN': '#1E3A8A',
-				'MC': '#F97316',
-			};
+			let data: Record<string, any> = {};
+
+			const stateColors = [
+				'#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
+				'#911eb4', '#42d4f4', '#f032e6', '#bfef45', '#fabed4',
+				'#469990', '#dcbeff', '#9A6324', '#fffac8', '#800000',
+				'#aaffc3', '#808000', '#ffd8b1', '#000075', '#a9a9a9',
+				'#e6beff', '#1abc9c', '#e74c3c', '#3498db', '#2ecc71',
+				'#9b59b6', '#f39c12', '#1abc9c', '#e67e22', '#2980b9',
+				'#27ae60', '#8e44ad'
+			];
 
 			const svg = d3.select('#map-container')
 				.append('svg')
 				.attr('viewBox', `0 0 ${width} ${height}`)
-				.attr('preserveAspectRatio', 'xMidYMid meet');
+				.attr('preserveAspectRatio', 'xMidYMid meet')
+				.style('display', 'none');
 
 			const tooltip = d3.select('#tooltip');
 
 			async function loadData() {
-				const [cartRes, normRes] = await Promise.all([
-					fetch('/data/mexico-cartogram.geojson'),
-					fetch('/data/mexico-normal.geojson')
-				]);
-				cartogramGeo = await cartRes.json();
-				normalGeo = await normRes.json();
+				const files = [
+					['mun-cartogram', '/data/mexico-mun-cartogram.json'],
+					['mun-normal', '/data/mexico-mun-normal.json'],
+					['state-cartogram', '/data/mexico-cartogram.geojson'],
+					['state-normal', '/data/mexico-normal.geojson'],
+				];
+
+				const results = await Promise.all(
+					files.map(([key, url]) => fetch(url).then(r => r.json()).then(d => [key, d]))
+				);
+
+				for (const [key, d] of results) {
+					if (d.type === 'Topology') {
+						const objKey = Object.keys(d.objects)[0];
+						data[key] = topojson.feature(d, d.objects[objKey]);
+					} else {
+						data[key] = d;
+					}
+				}
+
+				document.getElementById('loading')!.style.display = 'none';
+				svg.style('display', null);
 				render();
+			}
+
+			function getDataKey(): string {
+				return `${levelMode}-${mapMode === 'cartogram' ? 'cartogram' : 'normal'}`;
 			}
 
 			function getColor(d: any): string {
 				const props = d.properties;
-				if (currentVariable === 'party_2024') {
-					return partyColors[props.party_2024] || '#666';
-				} else if (currentVariable === 'population') {
-					const scale = d3.scaleSequential(d3.interpolateYlOrRd)
-						.domain([500000, 17000000]);
-					return scale(props.population);
-				} else if (currentVariable === 'hdi') {
-					const scale = d3.scaleSequential(d3.interpolateRdYlGn)
-						.domain([0.65, 0.87]);
-					return scale(props.hdi);
+				if (colorVar === 'population') {
+					const maxPop = levelMode === 'mun' ? 2000000 : 17000000;
+					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxPop]);
+					return scale(props.population || 0);
+				} else if (colorVar === 'state') {
+					const ent = props.CVE_ENT || props.id || '00';
+					const idx = (parseInt(ent) - 1) % stateColors.length;
+					return stateColors[idx];
+				} else if (colorVar === 'party_2024') {
+					const colors: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
+					return colors[props.party_2024] || '#666';
+				} else if (colorVar === 'hdi') {
+					const scale = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.65, 0.87]);
+					return scale(props.hdi || 0.75);
 				}
 				return '#666';
 			}
 
-			function formatValue(props: any): string {
-				if (currentVariable === 'party_2024') return props.party_2024;
-				if (currentVariable === 'population') return props.population.toLocaleString();
-				if (currentVariable === 'hdi') return props.hdi.toFixed(3);
-				return '';
-			}
-
-			function getLabel(): string {
-				if (currentVariable === 'party_2024') return '2024 Winner';
-				if (currentVariable === 'population') return 'Population';
-				if (currentVariable === 'hdi') return 'HDI';
-				return '';
+			function getName(d: any): string {
+				return d.properties.NOMGEO || d.properties.name || 'Unknown';
 			}
 
 			function renderLegend() {
 				const legend = d3.select('#legend');
 				legend.html('');
-				if (currentVariable === 'party_2024') {
-					Object.entries(partyColors).forEach(([party, color]) => {
-						legend.append('div').attr('class', 'legend-item')
-							.html(`<div class="legend-swatch" style="background:${color}"></div>${party}`);
-					});
-				} else if (currentVariable === 'population') {
-					const steps = [1000000, 5000000, 10000000, 17000000];
-					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([500000, 17000000]);
+				if (colorVar === 'population') {
+					const maxPop = levelMode === 'mun' ? 2000000 : 17000000;
+					const scale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, maxPop]);
+					const steps = levelMode === 'mun'
+						? [10000, 100000, 500000, 1000000, 2000000]
+						: [1000000, 5000000, 10000000, 17000000];
 					steps.forEach(v => {
+						const label = v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : `${(v/1000).toFixed(0)}K`;
 						legend.append('div').attr('class', 'legend-item')
-							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${(v/1000000).toFixed(0)}M`);
+							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
 					});
-				} else if (currentVariable === 'hdi') {
-					const steps = [0.67, 0.72, 0.77, 0.82, 0.86];
-					const scale = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.65, 0.87]);
-					steps.forEach(v => {
+				} else if (colorVar === 'party_2024') {
+					const parties: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
+					Object.entries(parties).forEach(([p, c]) => {
 						legend.append('div').attr('class', 'legend-item')
-							.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${v.toFixed(2)}`);
+							.html(`<div class="legend-swatch" style="background:${c}"></div>${p}`);
 					});
 				}
 			}
 
 			function render() {
-				const geo = currentData === 'cartogram' ? cartogramGeo : normalGeo;
+				const key = getDataKey();
+				const geo = data[key];
 				if (!geo) return;
 
 				const projection = d3.geoMercator().fitSize([width, height], geo);
@@ -255,17 +283,17 @@ import Header from '../components/Header.astro';
 					.join('path')
 					.attr('d', path as any)
 					.attr('fill', (d: any) => getColor(d))
-					.attr('stroke', 'rgba(255,255,255,0.2)')
-					.attr('stroke-width', 0.5)
+					.attr('stroke', levelMode === 'mun' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)')
+					.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5)
 					.on('mouseover', function(event: MouseEvent, d: any) {
 						d3.select(this)
 							.attr('stroke', '#fbbf24')
-							.attr('stroke-width', 2)
+							.attr('stroke-width', levelMode === 'mun' ? 1 : 2)
 							.raise();
+						const pop = d.properties.population;
 						tooltip.style('opacity', 1)
-							.html(`<div class="tt-name">${d.properties.name}</div>
-								<div class="tt-value">${getLabel()}: ${formatValue(d.properties)}</div>
-								<div class="tt-value">Pop: ${d.properties.population.toLocaleString()}</div>`);
+							.html(`<div class="tt-name">${getName(d)}</div>
+								<div class="tt-value">Pop: ${pop ? pop.toLocaleString() : 'N/A'}</div>`);
 					})
 					.on('mousemove', function(event: MouseEvent) {
 						tooltip
@@ -274,36 +302,72 @@ import Header from '../components/Header.astro';
 					})
 					.on('mouseout', function() {
 						d3.select(this)
-							.attr('stroke', 'rgba(255,255,255,0.2)')
-							.attr('stroke-width', 0.5);
+							.attr('stroke', levelMode === 'mun' ? 'rgba(255,255,255,0.08)' : 'rgba(255,255,255,0.2)')
+							.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5);
 						tooltip.style('opacity', 0);
 					});
 
 				renderLegend();
 			}
 
-			// Variable buttons
-			document.querySelectorAll('.controls button').forEach(btn => {
-				btn.addEventListener('click', () => {
-					document.querySelectorAll('.controls button').forEach(b => b.classList.remove('active'));
-					btn.classList.add('active');
-					currentVariable = btn.getAttribute('data-variable') || 'party_2024';
-					render();
-				});
-			});
-
-			// Map toggle
+			// Map mode toggle
 			document.getElementById('btn-cartogram')?.addEventListener('click', () => {
-				currentData = 'cartogram';
+				mapMode = 'cartogram';
 				document.getElementById('btn-cartogram')?.classList.add('active');
 				document.getElementById('btn-normal')?.classList.remove('active');
 				render();
 			});
 			document.getElementById('btn-normal')?.addEventListener('click', () => {
-				currentData = 'normal';
+				mapMode = 'normal';
 				document.getElementById('btn-normal')?.classList.add('active');
 				document.getElementById('btn-cartogram')?.classList.remove('active');
 				render();
+			});
+
+			// Level toggle
+			document.getElementById('btn-mun')?.addEventListener('click', () => {
+				levelMode = 'mun';
+				document.getElementById('btn-mun')?.classList.add('active');
+				document.getElementById('btn-state')?.classList.remove('active');
+				// Update color options
+				updateColorButtons();
+				render();
+			});
+			document.getElementById('btn-state')?.addEventListener('click', () => {
+				levelMode = 'state';
+				document.getElementById('btn-state')?.classList.add('active');
+				document.getElementById('btn-mun')?.classList.remove('active');
+				updateColorButtons();
+				render();
+			});
+
+			function updateColorButtons() {
+				const btns = document.querySelectorAll('.color-btn');
+				btns.forEach(b => {
+					const v = b.getAttribute('data-variable');
+					if (levelMode === 'mun' && (v === 'party_2024' || v === 'hdi')) {
+						(b as HTMLElement).style.display = 'none';
+					} else {
+						(b as HTMLElement).style.display = '';
+					}
+				});
+				// Reset to population if current is hidden
+				if (levelMode === 'mun' && (colorVar === 'party_2024' || colorVar === 'hdi')) {
+					colorVar = 'population';
+					btns.forEach(b => {
+						b.classList.toggle('active', b.getAttribute('data-variable') === 'population');
+					});
+				}
+			}
+
+			// Color variable buttons
+			document.querySelectorAll('.color-btn').forEach(btn => {
+				btn.addEventListener('click', () => {
+					document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
+					btn.classList.add('active');
+					colorVar = btn.getAttribute('data-variable') || 'population';
+					render();
+				});
 			});
 
 			loadData();
