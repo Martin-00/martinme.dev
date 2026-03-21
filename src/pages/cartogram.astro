@@ -41,8 +41,9 @@ import Header from '../components/Header.astro';
 				margin: 0 0 0.2em;
 			}
 			.cartogram-header .subtitle {
-				font-size: 0.9em;
-				color: rgba(255, 255, 255, 0.5);
+				font-size: 0.85em;
+				color: rgba(255, 255, 255, 0.4);
+				font-style: italic;
 			}
 			.controls {
 				display: flex;
@@ -121,21 +122,30 @@ import Header from '../components/Header.astro';
 			.legend {
 				display: flex;
 				justify-content: center;
-				gap: 1em;
-				margin-top: 0.5em;
+				align-items: center;
+				gap: 0.6em;
+				margin-top: 0.75em;
+				padding: 0.6em 1.2em;
+				background: rgba(255, 255, 255, 0.03);
+				border: 1px solid rgba(255, 255, 255, 0.06);
+				border-radius: 6px;
 				flex-wrap: wrap;
 				font-size: 0.75em;
-				color: rgba(255, 255, 255, 0.5);
+				color: rgba(255, 255, 255, 0.55);
+				max-width: fit-content;
+				margin-left: auto;
+				margin-right: auto;
 			}
 			.legend-item {
 				display: flex;
 				align-items: center;
-				gap: 0.35em;
+				gap: 0.3em;
 			}
 			.legend-swatch {
-				width: 12px;
-				height: 12px;
+				width: 14px;
+				height: 14px;
 				border-radius: 2px;
+				border: 1px solid rgba(255, 255, 255, 0.1);
 			}
 			.loading {
 				text-align: center;
