@@ -26,19 +26,17 @@ import HeaderLink from './HeaderLink.astro';
 	nav {
 		display: flex;
 		align-items: center;
-		justify-content: center;
+		gap: 1.5em;
 		padding: 0.8em 0;
-		position: relative;
 	}
 	.site-title {
-		position: absolute;
-		left: 0;
 		font-size: 0.95em;
 		font-weight: 600;
 		color: #ffffff;
 		text-decoration: none;
 		letter-spacing: -0.01em;
 		white-space: nowrap;
+		flex-shrink: 0;
 	}
 	.site-title:hover {
 		color: var(--accent);
@@ -46,6 +44,7 @@ import HeaderLink from './HeaderLink.astro';
 	.nav-links {
 		display: flex;
 		gap: 0;
+		flex-wrap: wrap;
 	}
 	.nav-links a,
 	.nav-links :global(a) {
