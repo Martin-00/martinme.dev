@@ -44,7 +44,7 @@ import HeaderLink from './HeaderLink.astro';
 	.nav-links {
 		display: flex;
 		gap: 0;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 	}
 	.nav-links a,
 	.nav-links :global(a) {
@@ -74,13 +74,17 @@ import HeaderLink from './HeaderLink.astro';
 		color: var(--accent);
 		font-weight: 700;
 	}
-	@media (max-width: 720px) {
+	@media (max-width: 900px) {
 		header {
 			padding: 0 1em;
 		}
 		nav {
 			flex-direction: column;
 			gap: 0.5em;
+		}
+		.nav-links {
+			flex-wrap: wrap;
+			justify-content: center;
 		}
 		.nav-links a,
 		.nav-links :global(a) {
