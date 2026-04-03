@@ -26,17 +26,19 @@ import HeaderLink from './HeaderLink.astro';
 	nav {
 		display: flex;
 		align-items: center;
-		gap: 1.5em;
+		justify-content: center;
+		position: relative;
 		padding: 0.8em 0;
 	}
 	.site-title {
+		position: absolute;
+		left: 0;
 		font-size: 0.95em;
 		font-weight: 600;
 		color: #ffffff;
 		text-decoration: none;
 		letter-spacing: -0.01em;
 		white-space: nowrap;
-		flex-shrink: 0;
 	}
 	.site-title:hover {
 		color: var(--accent);
@@ -45,8 +47,6 @@ import HeaderLink from './HeaderLink.astro';
 		display: flex;
 		gap: 0;
 		flex-wrap: nowrap;
-		flex: 1;
-		justify-content: center;
 	}
 	.nav-links a,
 	.nav-links :global(a) {
@@ -83,6 +83,9 @@ import HeaderLink from './HeaderLink.astro';
 		nav {
 			flex-direction: column;
 			gap: 0.5em;
+		}
+		.site-title {
+			position: static;
 		}
 		.nav-links {
 			flex-wrap: wrap;
