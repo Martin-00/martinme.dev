@@ -1,0 +1,221 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { SITE_TITLE } from '../consts';
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={`Projects - ${SITE_TITLE}`}
+			description="Projects by Martin M. E. Interactive data visualizations, technical writing, and tools built with care."
+			keywords="Martin Morales projects, Mexico cartogram, data visualization, AWS, data engineering, Monterrey"
+		/>
+		<style>
+			.page-header {
+				text-align: center;
+				margin-bottom: 2em;
+			}
+			.page-header h1 {
+				font-size: 2em;
+				margin: 0;
+			}
+			.page-header .subtitle {
+				color: rgba(255, 255, 255, 0.45);
+				font-size: 0.95em;
+				margin-top: 0.3em;
+			}
+
+			.projects-grid {
+				display: flex;
+				flex-direction: column;
+				gap: 1.5em;
+			}
+
+			/* --- Project card base --- */
+			.project-card {
+				display: block;
+				text-decoration: none;
+				background: rgba(255, 255, 255, 0.03);
+				border: 1px solid var(--glass-border);
+				border-radius: 12px;
+				padding: 2em 2.5em;
+				transition: border-color 0.3s ease, transform 0.3s ease, background 0.3s ease;
+				position: relative;
+				overflow: hidden;
+			}
+			.project-card::before {
+				content: '';
+				position: absolute;
+				top: 0;
+				left: 0;
+				right: 0;
+				height: 3px;
+				background: var(--accent);
+				opacity: 0;
+				transition: opacity 0.3s ease;
+			}
+			.project-card:hover {
+				border-color: var(--accent);
+				transform: translateY(-3px);
+				background: rgba(251, 191, 36, 0.03);
+			}
+			.project-card:hover::before {
+				opacity: 1;
+			}
+			.project-card:hover .card-title {
+				color: var(--accent);
+			}
+
+			/* --- Featured card --- */
+			.project-card.featured::before {
+				opacity: 1;
+				background: linear-gradient(90deg, var(--accent), var(--accent-light));
+			}
+
+			/* --- Card content --- */
+			.card-label {
+				font-size: 0.7em;
+				text-transform: uppercase;
+				letter-spacing: 0.12em;
+				color: var(--accent);
+				font-weight: 600;
+				margin: 0 0 0.75em;
+			}
+			.card-title {
+				font-size: 1.5em;
+				font-weight: 650;
+				color: #ffffff;
+				margin: 0;
+				transition: color 0.2s ease;
+			}
+			.card-desc {
+				color: rgba(255, 255, 255, 0.65);
+				margin: 0.75em 0 0;
+				line-height: 1.65;
+			}
+			.card-highlight {
+				color: rgba(255, 255, 255, 0.85);
+				font-weight: 500;
+			}
+			.card-tags {
+				display: flex;
+				flex-wrap: wrap;
+				gap: 0.5em;
+				margin-top: 1.25em;
+			}
+			.tag {
+				font-size: 0.7em;
+				padding: 0.3em 0.75em;
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid rgba(255, 255, 255, 0.1);
+				border-radius: 4px;
+				color: rgba(255, 255, 255, 0.55);
+				font-weight: 500;
+				letter-spacing: 0.02em;
+			}
+
+			/* --- Secondary grid --- */
+			.secondary-grid {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 1.5em;
+			}
+
+			/* --- Coming soon --- */
+			.project-card.coming-soon {
+				border-style: dashed;
+			}
+			.project-card.coming-soon .card-title {
+				color: rgba(255, 255, 255, 0.35);
+				font-style: italic;
+			}
+			.project-card.coming-soon .card-desc {
+				color: rgba(255, 255, 255, 0.3);
+			}
+			.project-card.coming-soon:hover {
+				transform: none;
+				border-color: rgba(255, 255, 255, 0.15);
+				background: rgba(255, 255, 255, 0.03);
+				cursor: default;
+			}
+			.project-card.coming-soon:hover .card-title {
+				color: rgba(255, 255, 255, 0.35);
+			}
+			.project-card.coming-soon::before {
+				display: none;
+			}
+
+			@media (max-width: 720px) {
+				.secondary-grid {
+					grid-template-columns: 1fr;
+				}
+				.project-card {
+					padding: 1.5em;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="page-header">
+				<h1>Projects</h1>
+				<p class="subtitle">Things I've built, explored, and shared.</p>
+			</div>
+
+			<div class="projects-grid">
+				<a href="/cartogram" class="project-card featured">
+					<p class="card-label">Featured</p>
+					<p class="card-title">Mexico Population Cartogram</p>
+					<p class="card-desc">
+						An interactive map of Mexico where territory is distorted by population.
+						<span class="card-highlight">2,478 municipios</span> rendered with real
+						INEGI Census 2020 data using the Gastner-Newman density-equalizing algorithm.
+						Toggle between cartogram and normal map, switch between municipio and state
+						views, and explore how standard maps hide where people actually live.
+						The central bulge of CDMX, Estado de Mexico, Puebla, and Guadalajara reveals
+						a country shaped nothing like its borders suggest.
+					</p>
+					<div class="card-tags">
+						<span class="tag">D3.js</span>
+						<span class="tag">INEGI Census 2020</span>
+						<span class="tag">Gastner-Newman</span>
+						<span class="tag">GeoJSON</span>
+						<span class="tag">Data Visualization</span>
+					</div>
+				</a>
+
+				<div class="secondary-grid">
+					<a href="/writings" class="project-card">
+						<p class="card-label">Ongoing</p>
+						<p class="card-title">Writings</p>
+						<p class="card-desc">
+							Technical and philosophical. How I deployed this site on AWS
+							for $0.51/month with zero long-lived keys, ideas worth carrying
+							about building things that matter, and reflections on what it means
+							to grow as an engineer at Caylent.
+						</p>
+						<div class="card-tags">
+							<span class="tag">AWS</span>
+							<span class="tag">Engineering</span>
+							<span class="tag">Philosophy</span>
+						</div>
+					</a>
+
+					<div class="project-card coming-soon">
+						<p class="card-label">In progress</p>
+						<p class="card-title">Coming soon</p>
+						<p class="card-desc">
+							More is being built. Data pipelines, open data tools,
+							and things that aim at making the world a little better.
+						</p>
+					</div>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
