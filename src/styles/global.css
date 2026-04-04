@@ -55,7 +55,7 @@ body {
 	min-height: 100vh;
 }
 main {
-	width: clamp(1200px, 68vw, 1500px);
+	width: clamp(1200px, 80vw, 1700px);
 	max-width: calc(100% - 2em);
 	margin: auto;
 	padding: 0.5em 3em 2em;
