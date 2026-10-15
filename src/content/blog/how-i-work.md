@@ -1,7 +1,7 @@
 ---
 title: 'How I work: a brain with repos inside'
 description: 'My working system: an Obsidian vault as a second brain, code repos living inside it, workstreams with a diary and documents, and AI as a pair. Published so I can refine it in the open.'
-pubDate: 'Oct 15 2026'
+pubDate: '2026-10-15T03:45:00'
 ---
 
 I'm publishing how I work for one reason: public things are easier to refine. I can reach this page from anywhere, link to it, get feedback on it, and git keeps every version. This page will change. That's the point.

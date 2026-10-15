@@ -1,7 +1,7 @@
 ---
 title: 'Refine, never distort'
 description: 'Two principles for improving anything, from an essay to a plan to yourself: keep every true thing, invent nothing false, and know when a rule should bend.'
-pubDate: 'Oct 15 2026'
+pubDate: '2026-10-15T03:30:00'
 ---
 
 In one day I rewrote most of this site with Claude: four essays, the home page, and the about page. Two principles came out of that work. They apply to far more than websites, so I'm writing them down.
