@@ -1,7 +1,7 @@
 ---
 import '../styles/global.css';
-import sourceSerifRoman from '../assets/fonts/source-serif-roman.woff?url';
-import sourceSerifItalic from '../assets/fonts/source-serif-italic.woff?url';
+import sourceSerifRoman from '../assets/fonts/source-serif-roman.woff2?url';
+import sourceSerifItalic from '../assets/fonts/source-serif-italic.woff2?url';
 import { SITE_TITLE } from '../consts';
 
 interface Props {
@@ -30,8 +30,8 @@ const { title, description, keywords } = Astro.props;
 <meta name="generator" content={Astro.generator} />
 
 <!-- Font preloads -->
-<link rel="preload" href={sourceSerifRoman} as="font" type="font/woff" crossorigin />
-<link rel="preload" href={sourceSerifItalic} as="font" type="font/woff" crossorigin />
+<link rel="preload" href={sourceSerifRoman} as="font" type="font/woff2" crossorigin />
+<link rel="preload" href={sourceSerifItalic} as="font" type="font/woff2" crossorigin />
 
 <!-- Canonical URL -->
 <link rel="canonical" href={canonicalURL} />
