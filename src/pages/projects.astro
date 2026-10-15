@@ -1,8 +1,12 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
+
+const posts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
 ---
 
 <!doctype html>
@@ -124,30 +128,6 @@ import { SITE_TITLE } from '../consts';
 				gap: 1.5em;
 			}
 
-			/* --- Coming soon --- */
-			.project-card.coming-soon {
-				border-style: dashed;
-			}
-			.project-card.coming-soon .card-title {
-				color: rgba(255, 255, 255, 0.35);
-				font-style: italic;
-			}
-			.project-card.coming-soon .card-desc {
-				color: rgba(255, 255, 255, 0.3);
-			}
-			.project-card.coming-soon:hover {
-				transform: none;
-				border-color: rgba(255, 255, 255, 0.15);
-				background: rgba(255, 255, 255, 0.03);
-				cursor: default;
-			}
-			.project-card.coming-soon:hover .card-title {
-				color: rgba(255, 255, 255, 0.35);
-			}
-			.project-card.coming-soon::before {
-				display: none;
-			}
-
 			@media (max-width: 720px) {
 				.secondary-grid {
 					grid-template-columns: 1fr;
@@ -189,14 +169,28 @@ import { SITE_TITLE } from '../consts';
 				</a>
 
 				<div class="secondary-grid">
+					<a href="/writings/how-i-deployed-martinme-dev/" class="project-card">
+						<p class="card-label">Infrastructure</p>
+						<p class="card-title">This Site</p>
+						<p class="card-desc">
+							Runs on AWS for <span class="card-highlight">$0.51/month</span>: a private S3
+							bucket behind CloudFront, infrastructure in Terraform, and deploys through
+							GitHub Actions with OIDC, so no keys are stored anywhere.
+						</p>
+						<div class="card-tags">
+							<span class="tag">AWS</span>
+							<span class="tag">Terraform</span>
+							<span class="tag">CloudFront</span>
+							<span class="tag">OIDC</span>
+						</div>
+					</a>
+
 					<a href="/writings" class="project-card">
 						<p class="card-label">Ongoing</p>
 						<p class="card-title">Writings</p>
 						<p class="card-desc">
-							Technical and philosophical. How I deployed this site on AWS
-							for $0.51/month with zero long-lived keys, ideas worth carrying
-							about building things that matter, and reflections on what it means
-							to grow as an engineer at Caylent.
+							{posts.length} essays, technical and philosophical. Latest:
+							<span class="card-highlight">{posts[0].data.title}</span>.
 						</p>
 						<div class="card-tags">
 							<span class="tag">AWS</span>
@@ -204,15 +198,6 @@ import { SITE_TITLE } from '../consts';
 							<span class="tag">Philosophy</span>
 						</div>
 					</a>
-
-					<div class="project-card coming-soon">
-						<p class="card-label">In progress</p>
-						<p class="card-title">Coming soon</p>
-						<p class="card-desc">
-							More is being built. Data pipelines, open data tools,
-							and things that aim at making the world a little better.
-						</p>
-					</div>
 				</div>
 			</div>
 		</main>
