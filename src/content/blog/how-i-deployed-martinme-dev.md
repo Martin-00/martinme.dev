@@ -2,7 +2,7 @@
 title: 'How I deployed martinme.dev on AWS for $0.51/month'
 description: 'S3, CloudFront, Terraform, OIDC, and zero-trust CI/CD. The hard way that teaches you everything.'
 pubDate: 'Mar 10 2026'
-updatedDate: 'Mar 16 2026'
+updatedDate: 'Oct 15 2026'
 ---
 
 I built my personal website on AWS from scratch. Not on Vercel, not on Netlify, not on Cloudflare Pages. On S3, CloudFront, ACM, Route 53, Terraform, and GitHub Actions with OIDC authentication. The whole thing costs $0.51/month.
@@ -86,7 +86,7 @@ function handler(event) {
 
 This runs on every request, at the edge, before CloudFront checks its cache. Without it, every path except the root would return 403.
 
-CloudFront also handles **custom error responses**. S3 with OAC returns 403 for missing files (not 404), which would show users an ugly XML error page. We map both 403 and 404 responses to serve `/404.html` with a proper 404 status code.
+CloudFront also handles **custom error responses**. S3 with OAC returns 403 `AccessDenied` for missing files (not 404), because a request for a key that doesn't exist is technically unauthorized. Left alone, that would show users an ugly XML error page. We map both 403 and 404 responses to serve `/404.html` with a proper 404 status code.
 
 ### ACM: Free SSL for both domains
 
@@ -138,7 +138,7 @@ The IAM role's trust policy is scoped to one specific repository and one specifi
 
 ## Two-pass deploys: Cache strategy
 
-Static site generators like Astro put all CSS, JS, and optimized images into a hashed assets directory (`/_astro/` for Astro) with content hashes in the filenames. These files are immutable: if the content changes, the filename changes. Browsers can cache them forever.
+Static site generators like Astro put the CSS, JS, and any images or fonts your code imports into a hashed assets directory (`/_astro/` for Astro) with content hashes in the filenames. Files in `public/` are copied as-is, unhashed. (That detail later cost me 3 MB per page view; see [six months later](#six-months-later-what-the-setup-missed).) These files are immutable: if the content changes, the filename changes. Browsers can cache them forever.
 
 HTML files change on every deploy. If a browser caches an old `index.html`, the user sees stale content.
 
@@ -177,11 +177,7 @@ The Route 53 hosted zone is the only unavoidable cost. Everything else is either
 
 **ACM validation blocks `terraform apply`.** Terraform creates the ACM certificate and Route 53 DNS validation records, then blocks on `aws_acm_certificate_validation` until the cert is validated. But if your registrar's nameservers haven't been updated to Route 53 yet, DNS can't resolve the validation CNAMEs, and Terraform waits indefinitely. The solution: while Terraform is blocking, quickly update your registrar's nameservers to the Route 53 ones (visible in the AWS Console). Once DNS propagates (~15 minutes), ACM validates automatically and Terraform continues.
 
-**S3 returns 403 instead of 404 for missing files.** With OAC, S3 returns `AccessDenied` (403) for files that don't exist, because the request is technically unauthorized for a non-existent key. CloudFront custom error responses map both 403 and 404 to your `/404.html` page with a 404 status code.
-
-**OIDC thumbprint rotation.** The OIDC identity provider's thumbprint can become stale. If the pipeline fails with `Not authorized to perform sts:AssumeRoleWithWebIdentity` and the trust policy looks correct, delete the OIDC provider in IAM and recreate it. AWS fetches the current thumbprint automatically.
-
-**OIDC secret format.** The role ARN must include the double colon before the account ID (`arn:aws:iam::123456789012:role/...`). This is easy to mistype when pasting into GitHub Secrets, and the error message gives no indication that the ARN format is wrong.
+The 403-for-missing-files behavior and the two OIDC gotchas are covered in their sections above.
 
 ## The GitHub Actions workflow
 
@@ -258,5 +254,32 @@ Building this the hard way forced me to understand things I would have glossed o
 - **Terraform state locking**: Without DynamoDB locking, two simultaneous `terraform apply` runs could corrupt the state file. With locking, the second run waits or fails cleanly. The DynamoDB table costs nothing on pay-per-request and prevents a class of problems that are very hard to recover from.
 
 None of this shows up in a Vercel deploy. All of it shows up in an AWS certification exam, a job interview, or a client engagement.
+
+## Six months later: what the setup missed
+
+The architecture held up. Four details didn't, and I fixed them with Claude as my pair. Each fix left behind a mental model I now use everywhere.
+
+**1. The pipeline mirrors the repo, so the repo must be the truth.** In April I uploaded a new essay straight to S3 from my other laptop and never committed it. Because the deploy runs `s3 sync --delete`, the next push would have deleted it from the live site. Claude caught it by comparing the live site against the repo, then confirmed nothing else had drifted by building locally and diffing every page byte for byte against production. ([The full story](/writings/the-neurochemical-illusion-of-ai/).)
+*Model: never deploy by hand, and diff what you're about to ship against what's live.*
+
+**2. Only hashed files get cached.** The two-pass deploy gives `/_astro/` a one-year immutable cache and everything else `no-store`. My background image and fonts lived in `public/`, so they landed in the no-store lane: every visitor downloaded about 3 MB again on every page. The fix didn't touch the cache config. Moving the files to `src/assets/` and referencing them from CSS made Astro fingerprint them (`hubble-legacy-field.<hash>.webp`), which puts them in the cached lane.
+*Model: a file can be cached forever only if its name changes when its content does.*
+
+**3. Better formats, measured, not assumed.** The original 1.87 MB PNG background became a 422 KB WebP at quality 95, with no visible difference at 2x zoom and a measured pixel-error score (PSNR) checked on the stars specifically. The fonts moved from WOFF to WOFF2: 1.15 MB to 755 KB, with every glyph and the variable weight axis intact. The only table dropped was a digital signature that browsers ignore.
+*Model: same content, better packaging. Verify the content survived.*
+
+**4. Measure the file you ship.** When we switched the background to the Hubble Legacy Field, Claude measured a quality-95 encode, then saved it through the encoder a second time, which silently recompressed it at the default quality. The tell: the live file was 274 KB, not the 781 KB that had been measured. Checking `content-length` in production caught what the local test missed.
+*Model: test the artifact that actually ships, not the one in memory.*
+
+## Design principles
+
+The brief was: *serious, catching and interesting, elegant and pretty, while keeping it developer style.* Here's how it translated:
+
+- **Serif to read, monospace to annotate.** Source Serif carries the prose. The system monospace, which needs no download, carries labels, dates, and numbers.
+- **One column, everything once.** The home page used to show the list of writings four times. Now each thing appears once, in one reading path.
+- **A thesis up top.** The first line under my name is something I believe: technology is a vehicle, and where it goes matters more than how fast it moves.
+- **Small nerd signatures.** Essays are numbered in publication order, and dates use ISO 8601 (`2026-04-12`).
+- **Dark glass over deep space.** The background is a crop of the [Hubble Legacy Field](https://esahubble.org/images/heic1909a/), a composite of roughly 265,000 galaxies (CC BY 4.0, credited in the footer). Text sits on a darker panel so the universe never fights the words.
+- **Derived, never hand-typed.** Post lists, counts, and "latest" labels are computed from the content at build time, so they can't go stale.
 
 If you want to see the full implementation, including all Terraform files and the GitHub Actions workflow, the source code is at [github.com/Martin-00/martinme.dev](https://github.com/Martin-00/martinme.dev). If you build your own, I'd love to hear about it.
