@@ -7,9 +7,13 @@ import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
 const posts = (await getCollection('blog'))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
-const lastActivity = (post: (typeof posts)[number]) => post.data.updatedDate ?? post.data.pubDate;
-const latest = [...posts].sort((a, b) => lastActivity(b).valueOf() - lastActivity(a).valueOf())[0];
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
+	.slice(0, 5);
+
+const projects = [
+	{ href: '/cartogram', title: 'Mexico Population Cartogram', meta: 'Interactive map' },
+	{ href: '/writings/how-i-deployed-martinme-dev/', title: 'This site', meta: 'AWS for $0.51/month' },
+];
 ---
 
 <!doctype html>
@@ -17,144 +21,79 @@ const latest = [...posts].sort((a, b) => lastActivity(b).valueOf() - lastActivit
 	<head>
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} keywords="Martin Morales, data engineer, AWS, Monterrey Mexico, cloud architecture, data visualization, cartogram, Terraform, OIDC" />
 		<style>
-			.page-title {
-				text-align: center;
-				margin: 0.5em 0 0.25em;
-				padding-bottom: 0.5em;
+			.home {
+				max-width: 40em;
+				margin: 0 auto;
+				padding: 1em 0;
 			}
-			.page-title h1 {
+			.intro header {
+				text-align: center;
+			}
+			.intro h1 {
 				font-size: 1.8em;
 				font-weight: 650;
 				margin: 0;
 			}
-			.page-title .subtitle {
+			.intro .subtitle {
 				font-size: 0.95em;
 				color: rgba(255, 255, 255, 0.5);
-				margin-top: 0.2em;
+				margin: 0.2em 0 0;
 			}
-			hr.title-rule {
-				border: none;
-				border-top: 1px solid rgba(255, 255, 255, 0.1);
-				margin: 0 0 1.25em 0;
-			}
-			.layout {
-				display: flex;
-				gap: 2em;
-				align-items: stretch;
-			}
-			.about-col {
-				flex: 6;
-				min-width: 0;
-			}
-			.projects-col {
-				flex: 4;
-				min-width: 0;
-				padding-left: 2em;
-				border-left: 1px solid rgba(255, 255, 255, 0.1);
-			}
-			.about-col .accent {
-				color: var(--accent);
-				font-weight: 600;
-			}
-			.smallcaps {
-				font-variant: small-caps;
-				font-weight: 600;
-				letter-spacing: 0.05em;
-				color: rgba(255, 255, 255, 0.8);
-			}
-			.nav-text {
-				font-size: 0.88em;
-				color: rgba(255, 255, 255, 0.55);
-				margin-top: 0.75em;
-			}
-			.nav-text a {
-				text-decoration-thickness: 1px;
-			}
-			.projects-col h2 {
-				font-size: 1.15em;
-				font-variant: small-caps;
-				font-weight: 600;
-				margin: 0 0 0.75em 0;
-			}
-			.project-card {
-				display: block;
-				text-decoration: none;
-				padding: 1.5em 1.25em;
-				background: rgba(255, 255, 255, 0.03);
-				border: 1px solid rgba(255, 255, 255, 0.08);
-				border-radius: 6px;
-				margin-bottom: 0.75em;
-				transition: border-color 0.2s ease, transform 0.2s ease, background 0.2s ease;
-				position: relative;
-				overflow: hidden;
-			}
-			.project-card:hover {
-				border-color: var(--accent);
-				transform: translateY(-2px);
-				background: rgba(251, 191, 36, 0.04);
-			}
-			.project-card .card-title {
-				font-size: 1.2em;
-				font-weight: 600;
-				color: #ffffff;
-				margin: 0;
-				transition: color 0.2s ease;
-			}
-			.project-card:hover .card-title {
-				color: var(--accent);
-			}
-			.project-card .card-desc {
-				font-size: 0.82em;
-				color: rgba(255, 255, 255, 0.45);
-				margin: 0.3em 0 0;
-			}
-			.project-card .card-label {
-				font-size: 0.72em;
-				font-variant: small-caps;
-				letter-spacing: 0.08em;
-				color: var(--accent);
-				margin: 0 0 0.4em;
-			}
-			.project-card.latest {
+			.intro hr {
 				margin: 1.25em 0;
 			}
-			.writings-section {
-				margin-top: 1.25em;
-				padding-top: 1em;
-				border-top: 1px dotted rgba(255, 255, 255, 0.1);
+			section {
+				margin-top: 2.5em;
 			}
-			.writings-section h3 {
-				font-size: 1em;
+			.section-head {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				padding-bottom: 0.4em;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			}
+			.section-head h2 {
+				font-size: 0.95em;
 				font-variant: small-caps;
-				font-weight: 600;
-				margin: 0 0 0.5em 0;
+				letter-spacing: 0.08em;
+				color: rgba(255, 255, 255, 0.8);
+				margin: 0;
 			}
-			.writings-list {
+			.section-head a {
+				font-size: 0.8em;
+				text-decoration: none;
+			}
+			.entries {
 				list-style: none;
 				padding: 0;
 				margin: 0;
 			}
-			.writings-list li {
-				padding: 0.3em 0;
+			.entries li {
+				margin: 0;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 			}
-			.writings-list a {
+			.entries a {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 1.5em;
+				padding: 0.65em 0;
+				color: #f0f0f0;
 				text-decoration: none;
-				font-size: 0.9em;
-				color: rgba(255, 255, 255, 0.8);
 				transition: color 0.15s ease;
 			}
-			.writings-list a:hover {
+			.entries a:hover {
 				color: var(--accent);
 			}
-			.writings-list .date {
+			.entries .meta {
+				flex-shrink: 0;
 				font-size: 0.75em;
-				color: rgba(255, 255, 255, 0.3);
-				margin-left: 0.5em;
+				color: rgba(255, 255, 255, 0.4);
 			}
 			@media (max-width: 720px) {
-				.layout {
+				.entries a {
 					flex-direction: column;
-					gap: 1.5em;
+					gap: 0.1em;
 				}
 			}
 		</style>
@@ -163,73 +102,61 @@ const latest = [...posts].sort((a, b) => lastActivity(b).valueOf() - lastActivit
 		<Header />
 		<main>
 			<div class="glass-card">
-				<div class="page-title">
-					<h1>Martin M. E.</h1>
-					<p class="subtitle">Data Engineer. Builder. Monterrey, Mexico.</p>
-				</div>
-				<hr class="title-rule" />
-
-				<div class="layout">
-					<div class="about-col">
+				<div class="home">
+					<div class="intro">
+						<header>
+							<h1>Martin M. E.</h1>
+							<p class="subtitle">Data Engineer. Builder. Monterrey, Mexico.</p>
+						</header>
+						<hr />
 						<p>
-							Hello! I'm <strong>Martin M. E.</strong>, a <span class="accent">Data Engineer</span> at
-							<a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>,
-							based in Monterrey, Mexico. I build cloud infrastructure and data systems on AWS.
+							Hello! I build cloud infrastructure and data systems on AWS at
+							<a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>.
 						</p>
 						<p>
 							I care about the welfare of all beings, and about whether the things we build
-							make the world better or just faster. The superpower behind every great system
-							isn't genius but iteration. Technology is a vehicle. Where it goes matters more
-							than how fast it moves.
-						</p>
-						<a href={`/writings/${latest.id}/`} class="project-card latest">
-							<p class="card-label">Latest · <FormattedDate date={lastActivity(latest)} /></p>
-							<p class="card-title">{latest.data.title}</p>
-							<p class="card-desc">{latest.data.description}</p>
-						</a>
-						<p class="nav-text">
-							<span class="smallcaps">More:</span>
-							what I believe and what I love, on the <a href="/about">about page</a>;
-							code on <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
-						</p>
-						<p class="nav-text">
-							<span class="smallcaps">Stack:</span>
-							AWS, Python, Terraform, SQL, Apache Iceberg, Athena, Glue, S3, CloudFront,
-							OpenSearch, Docker, Kafka, DynamoDB, Lambda, Kubernetes.
+							make the world better or just faster. Technology is a vehicle. Where it goes
+							matters more than how fast it moves. <a href="/about">More about me →</a>
 						</p>
 					</div>
 
-					<div class="projects-col">
-						<h2>Projects</h2>
-						<a href="/writings" class="project-card">
-							<p class="card-title">Writings</p>
-							<p class="card-desc">Technical and philosophical.</p>
-						</a>
-						<a href="/cartogram" class="project-card">
-							<p class="card-title">Mexico Cartogram</p>
-							<p class="card-desc">Interactive population map.</p>
-						</a>
-						<a href="/writings/how-i-deployed-martinme-dev/" class="project-card">
-							<p class="card-title">This Site</p>
-							<p class="card-desc">AWS for $0.51/month, zero stored keys.</p>
-						</a>
-					</div>
-				</div>
+					<section>
+						<div class="section-head">
+							<h2>Writings</h2>
+							<a href="/writings">All writings →</a>
+						</div>
+						<ul class="entries">
+							{
+								posts.map((post) => (
+									<li>
+										<a href={`/writings/${post.id}/`}>
+											<span>{post.data.title}</span>
+											<span class="meta"><FormattedDate date={post.data.pubDate} /></span>
+										</a>
+									</li>
+								))
+							}
+						</ul>
+					</section>
 
-				<div class="writings-section">
-					<h3>Writings</h3>
-					<ul class="writings-list">
-						{
-							posts.map((post) => (
-								<li>
-									<a href={`/writings/${post.id}/`}>
-										{post.data.title}
-										<span class="date"><FormattedDate date={post.data.pubDate} /></span>
-									</a>
-								</li>
-							))
-						}
-					</ul>
+					<section>
+						<div class="section-head">
+							<h2>Projects</h2>
+							<a href="/projects">All projects →</a>
+						</div>
+						<ul class="entries">
+							{
+								projects.map((project) => (
+									<li>
+										<a href={project.href}>
+											<span>{project.title}</span>
+											<span class="meta">{project.meta}</span>
+										</a>
+									</li>
+								))
+							}
+						</ul>
+					</section>
 				</div>
 			</div>
 		</main>
