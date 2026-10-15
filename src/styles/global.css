@@ -21,14 +21,14 @@
 /* Source Serif 4 Variable — the Gwern font */
 @font-face {
 	font-family: 'Source Serif';
-	src: url('/fonts/source-serif-roman.woff') format('woff');
+	src: url('../assets/fonts/source-serif-roman.woff') format('woff');
 	font-weight: 100 900;
 	font-style: normal;
 	font-display: swap;
 }
 @font-face {
 	font-family: 'Source Serif';
-	src: url('/fonts/source-serif-italic.woff') format('woff');
+	src: url('../assets/fonts/source-serif-italic.woff') format('woff');
 	font-weight: 100 900;
 	font-style: italic;
 	font-display: swap;
@@ -40,7 +40,7 @@ body {
 	padding: 0;
 	text-align: left;
 	background-color: #0a0f1e;
-	background-image: url('/space-background.png');
+	background-image: url('../assets/space-background.webp');
 	background-size: cover;
 	background-position: center;
 	background-attachment: fixed;
