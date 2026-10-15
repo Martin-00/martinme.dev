@@ -2,6 +2,10 @@
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
+import metrics from '../assets/cartogram/metrics.json';
+
+const carto = metrics.cartogram;
+const points = metrics.settings.points.toLocaleString('en-US');
 ---
 
 <!doctype html>
@@ -9,20 +13,21 @@ import Header from '../components/Header.astro';
 	<head>
 		<BaseHead
 			title="Mexico Cartogram - Interactive Population Map by Municipio"
-			description="Interactive population cartogram of Mexico showing 2,476 municipios distorted by Census 2020 population. Toggle between cartogram and normal map. Color by population, state, election results. Built with D3.js and INEGI data."
-			keywords="mexico cartogram, cartograma mexico, mexico population map, mexico municipios map, INEGI census 2020, mexico interactive map, mexico data visualization, cartogram D3, mexico election map, mexico population density, Gastner-Newman cartogram"
+			description="Interactive population cartogram of Mexico: all 2,469 municipios sized by INEGI Census 2020 population, morphing from the real map. Built with the Gastner-Seguy-More flow-based algorithm and D3.js."
+			keywords="mexico cartogram, cartograma mexico, mexico population map, mexico municipios map, INEGI census 2020, mexico interactive map, mexico data visualization, cartogram D3, flow-based cartogram, mexico population density"
 		/>
 		<script type="application/ld+json">
 		{
 			"@context": "https://schema.org",
 			"@type": "CreativeWork",
 			"name": "Mexico Population Cartogram",
-			"description": "Interactive cartogram of Mexico showing 2,476 municipios distorted by population from the INEGI Census 2020. Built with D3.js and the Gastner-Newman density-equalizing algorithm.",
+			"description": "Interactive cartogram of Mexico: all 2,469 municipios sized by INEGI Census 2020 population, built with the Gastner-Seguy-More flow-based algorithm.",
 			"author": {
 				"@type": "Person",
 				"name": "Martin Morales Estrada"
 			},
 			"datePublished": "2026-03-19",
+			"dateModified": "2026-10-15",
 			"url": "https://martinme.dev/cartogram",
 			"keywords": ["cartogram", "Mexico", "population", "INEGI", "data visualization", "D3.js", "municipios"],
 			"about": {
@@ -49,7 +54,7 @@ import Header from '../components/Header.astro';
 				display: flex;
 				justify-content: center;
 				gap: 0.5em;
-				margin-bottom: 0.5em;
+				margin-bottom: 0.75em;
 				flex-wrap: wrap;
 			}
 			.controls button {
@@ -74,7 +79,6 @@ import Header from '../components/Header.astro';
 			}
 			.control-group {
 				display: flex;
-				gap: 0;
 			}
 			.control-group button {
 				margin-left: -1px;
@@ -87,14 +91,23 @@ import Header from '../components/Header.astro';
 				background: rgba(255, 255, 255, 0.1);
 				margin: 0 0.75em;
 			}
-			#map-container {
-				width: 100%;
-				display: flex;
-				justify-content: center;
+			@media (max-width: 720px) {
+				.control-separator {
+					display: none;
+				}
 			}
-			#map-container svg {
-				max-width: 100%;
-				height: auto;
+			.map {
+				position: relative;
+				width: 100%;
+			}
+			.map canvas {
+				display: block;
+				width: 100%;
+			}
+			.map canvas + canvas {
+				position: absolute;
+				inset: 0;
+				pointer-events: none;
 			}
 			.tooltip {
 				position: absolute;
@@ -111,11 +124,11 @@ import Header from '../components/Header.astro';
 				backdrop-filter: blur(8px);
 				-webkit-backdrop-filter: blur(8px);
 			}
-			.tooltip .tt-name {
+			.tooltip :global(.tt-name) {
 				font-weight: 600;
 				margin-bottom: 0.2em;
 			}
-			.tooltip .tt-value {
+			.tooltip :global(.tt-value) {
 				color: rgba(255, 255, 255, 0.65);
 				font-size: 0.9em;
 			}
@@ -124,7 +137,7 @@ import Header from '../components/Header.astro';
 				justify-content: center;
 				align-items: center;
 				gap: 0.6em;
-				margin-top: 0.75em;
+				margin: 0.75em auto 0;
 				padding: 0.6em 1.2em;
 				background: rgba(255, 255, 255, 0.03);
 				border: 1px solid rgba(255, 255, 255, 0.06);
@@ -133,15 +146,16 @@ import Header from '../components/Header.astro';
 				font-size: 0.75em;
 				color: rgba(255, 255, 255, 0.55);
 				max-width: fit-content;
-				margin-left: auto;
-				margin-right: auto;
 			}
-			.legend-item {
+			.legend:empty {
+				display: none;
+			}
+			.legend :global(.legend-item) {
 				display: flex;
 				align-items: center;
 				gap: 0.3em;
 			}
-			.legend-swatch {
+			.legend :global(.legend-swatch) {
 				width: 14px;
 				height: 14px;
 				border-radius: 2px;
@@ -163,7 +177,8 @@ import Header from '../components/Header.astro';
 				font-variant: small-caps;
 				margin-bottom: 0.75em;
 			}
-			.explanation p {
+			.explanation p,
+			.explanation li {
 				font-size: 0.92em;
 				color: rgba(255, 255, 255, 0.8);
 				line-height: 1.65;
@@ -181,7 +196,7 @@ import Header from '../components/Header.astro';
 			<div class="glass-card">
 				<div class="cartogram-header">
 					<h1>Mexico Cartogram</h1>
-					<p class="subtitle">Land area distorted by population. INEGI Census 2020 + Marco Geoestadistico 2025.</p>
+					<p class="subtitle">Every municipio sized by its people. INEGI Census 2020, all 2,469 municipios.</p>
 				</div>
 
 				<div class="controls">
@@ -201,8 +216,10 @@ import Header from '../components/Header.astro';
 					</div>
 				</div>
 
-				<div id="map-container">
+				<div class="map" id="map">
 					<div class="loading" id="loading">Loading map data...</div>
+					<canvas id="map-base" role="img" aria-label="Cartogram of Mexico's 2,469 municipios, each sized by its 2020 population"></canvas>
+					<canvas id="map-overlay" aria-hidden="true"></canvas>
 				</div>
 				<div id="legend" class="legend"></div>
 				<div class="tooltip" id="tooltip"></div>
@@ -242,25 +259,40 @@ import Header from '../components/Header.astro';
 					<p>
 						At the municipio level, the distortion is even more revealing. Within each
 						state, population concentrates in a few urban centers while vast rural
-						territories hold very few people. Toggle between "Normal" and "Cartogram" to
-						see how dramatically the country reshapes when you measure by people instead
-						of land.
+						territories hold very few people. Switch between "Normal" and "Cartogram" to
+						watch the country reshape itself when you measure by people instead of land.
 					</p>
 
 					<h2>How it was built</h2>
 					<p>
-						I built this cartogram with the help of AI in a single session. The
-						boundaries come from INEGI's Marco Geoestadistico 2025 (2,476 municipios).
-						The population data comes from the Census 2020 (126 million people). I used
-						the Gastner-Newman density-equalizing algorithm, computed in Python with
-						30 iterations and 1.15% average error. The rendering is D3.js, running
-						entirely in your browser. The whole site runs on AWS S3 and CloudFront
-						for $0.51/month. No backend, no API, no server.
+						The boundaries are INEGI's Marco Geoestadistico made for the 2020 census, so every
+						one of the {carto.municipios.toLocaleString('en-US')} municipios matches its census
+						count exactly: {carto.population.toLocaleString('en-US')} people in total. Shared
+						borders are simplified once and moved together, so neighbouring municipios can never
+						overlap. The map uses an equal-area projection, and the cartogram is computed with the
+						Gastner-Seguy-More flow-based algorithm (via the authors' cartogram-cpp), across
+						{points} border points.
+					</p>
+					<p>Measured on the final map, comparing each municipio's area with its share of the population:</p>
+					<ul>
+						<li>Median area error: {carto.area_error_median_pct}%, population-weighted: {carto.area_error_pop_weighted_pct}%</li>
+						<li>Worst municipio: {carto.area_error_max_pct}%</li>
+						<li>Overlap between municipios: {carto.overlap_pct_of_area}% of the map</li>
+						<li>
+							Borders that cross themselves: {carto.invalid_polygons.toLocaleString('en-US')} municipios,
+							covering {carto.self_crossing_pct_of_area}% of the map, almost all smaller than a pixel
+						</li>
+					</ul>
+					<p>
+						The whole pipeline, from INEGI's files to these numbers, is reproducible from the
+						repository. The map renders on a canvas in your browser; the site runs on AWS S3 and
+						CloudFront for $0.51/month, with no backend.
 					</p>
 					<p class="explanation-note">
-						<a href="https://github.com/Martin-00/martinme.dev" target="_blank" rel="noopener noreferrer">Source code on GitHub</a>.
-						Data: INEGI Marco Geoestadistico 2025, Census 2020.
-						Algorithm: Gastner-Newman density-equalizing cartogram.
+						<a href="https://github.com/Martin-00/martinme.dev/tree/main/scripts/cartogram" target="_blank" rel="noopener noreferrer">Pipeline source on GitHub</a>.
+						Data: INEGI Marco Geoestadistico (Censo de Poblacion y Vivienda 2020) and Census 2020 ITER.
+						Algorithm: Gastner, Seguy and More (2018), "Fast flow-based algorithm for creating
+						density-equalizing map projections," PNAS.
 					</p>
 				</div>
 			</div>
@@ -270,15 +302,32 @@ import Header from '../components/Header.astro';
 		<script>
 			import * as d3 from 'd3';
 			import * as topojson from 'topojson-client';
+			import topoUrl from '../assets/cartogram/mexico.topo.json?url';
+			import stateInfo from '../assets/cartogram/states.json';
 
-			const width = 960;
-			const height = 620;
+			type Ring = { a: Float32Array; b: Float32Array };
+			type Region = {
+				id: string;
+				name: string;
+				state: string;
+				population: number;
+				polygons: { a: number[][][][]; b: number[][][][] };
+				rings: Ring[];
+				boxA: number[];
+				boxB: number[];
+			};
+			type Mesh = { lines: { a: number[][][]; b: number[][][] }; screen: Ring[] };
 
-			let mapMode = 'cartogram';
-			let levelMode = 'mun';
-			let colorVar = 'population';
+			const PAD = 8;
+			const ASPECT = 0.64;
+			const MORPH_MS = 1100;
+			const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-			let data: Record<string, any> = {};
+			const container = document.getElementById('map')!;
+			const base = document.getElementById('map-base') as HTMLCanvasElement;
+			const overlay = document.getElementById('map-overlay') as HTMLCanvasElement;
+			const tooltip = d3.select('#tooltip');
+			const names = stateInfo as Record<string, { name: string }>;
 
 			const stateColors = [
 				'#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231',
@@ -289,212 +338,306 @@ import Header from '../components/Header.astro';
 				'#9b59b6', '#f39c12', '#1abc9c', '#e67e22', '#2980b9',
 				'#27ae60', '#8e44ad'
 			];
+			const munScale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
+			const stateScale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
 
-			const svg = d3.select('#map-container')
-				.append('svg')
-				.attr('viewBox', `0 0 ${width} ${height}`)
-				.attr('preserveAspectRatio', 'xMidYMid meet')
-				.style('display', 'none');
+			let t = 0; // 0 = normal geography, 1 = cartogram
+			let level: 'mun' | 'state' = 'mun';
+			let colorVar = 'population';
+			let timer: d3.Timer | null = null;
+			let hovered: Region | null = null;
+			let municipios: Region[] = [];
+			let states: Region[] = [];
+			let meshes: Record<'mun' | 'state' | 'outline', Mesh>;
+			let width = 0;
+			let height = 0;
 
-			const tooltip = d3.select('#tooltip');
+			const asPolygons = (g: any): number[][][][] =>
+				g.type === 'Polygon' ? [g.coordinates] : g.type === 'MultiPolygon' ? g.coordinates : [];
 
-			async function loadData() {
-				const files = [
-					['mun-cartogram', '/data/mexico-mun-cartogram.json'],
-					['mun-normal', '/data/mexico-mun-normal.json'],
-					['state-cartogram', '/data/mexico-cartogram.geojson'],
-					['state-normal', '/data/mexico-normal.geojson'],
-				];
+			function region(id: string, name: string, state: string, population: number, ga: any, gb: any): Region {
+				return { id, name, state, population, polygons: { a: asPolygons(ga), b: asPolygons(gb) }, rings: [], boxA: [], boxB: [] };
+			}
 
-				const results = await Promise.all(
-					files.map(([key, url]) => fetch(url).then(r => r.json()).then(d => [key, d]))
-				);
+			async function load() {
+				const topo = await fetch(topoUrl).then((r) => r.json());
+				const cartoTopo = { ...topo, arcs: topo.cartogram.arcs, transform: topo.cartogram.transform };
+				const obj = topo.objects.municipios;
 
-				for (const [key, d] of results) {
-					if (d.type === 'Topology') {
-						const objKey = Object.keys(d.objects)[0];
-						data[key] = topojson.feature(d, d.objects[objKey]);
-					} else {
-						data[key] = d;
+				const fa = (topojson.feature(topo, obj) as any).features;
+				const fb = (topojson.feature(cartoTopo, obj) as any).features;
+				municipios = fa.map((f: any, i: number) => {
+					const p = f.properties;
+					return region(p.id, p.name, p.state, p.population, f.geometry, fb[i].geometry);
+				});
+
+				const byState = d3.group(obj.geometries, (g: any) => g.properties.state);
+				states = Array.from(byState, ([code, geoms]: [string, any[]]) =>
+					region(code, names[code].name, code, d3.sum(geoms, (g) => g.properties.population),
+						topojson.merge(topo, geoms), topojson.merge(cartoTopo, geoms)));
+
+				// Border lines are picked per arc by which municipios it separates, never by matching
+				// coordinates, so both maps get identical line structures even where the cartogram squeezes hard.
+				const decode = (t: any) => {
+					const [sx, sy] = t.transform.scale;
+					const [tx, ty] = t.transform.translate;
+					return t.arcs.map((arc: number[][]) => {
+						let x = 0, y = 0;
+						return arc.map(([dx, dy]) => [(x += dx) * sx + tx, (y += dy) * sy + ty]);
+					});
+				};
+				const arcsA = decode(topo);
+				const arcsB = decode(cartoTopo);
+				const owners = new Map<number, any[]>();
+				for (const g of obj.geometries) {
+					const polys = g.type === 'Polygon' ? [g.arcs] : g.arcs;
+					for (const ring of polys.flat()) for (const i of ring) {
+						const k = i < 0 ? ~i : i;
+						owners.set(k, [...(owners.get(k) || []), g]);
 					}
 				}
+				const mesh = (filter: (a: any, b: any) => boolean) => {
+					const picked = [...owners].filter(([, gs]) => filter(gs[0], gs[1] ?? gs[0])).map(([k]) => k);
+					return { lines: { a: picked.map((k) => arcsA[k]), b: picked.map((k) => arcsB[k]) }, screen: [] };
+				};
+				meshes = {
+					mun: mesh((a, b) => a !== b && a.properties.state === b.properties.state),
+					state: mesh((a, b) => a !== b && a.properties.state !== b.properties.state),
+					outline: mesh((a, b) => a === b),
+				};
 
-				document.getElementById('loading')!.style.display = 'none';
-				svg.style('display', null);
-				render();
-			}
-
-			function getDataKey(): string {
-				return `${levelMode}-${mapMode === 'cartogram' ? 'cartogram' : 'normal'}`;
-			}
-
-			// Property accessors: mun files use short keys (n,p,e,c), state files use full names
-			function getPop(d: any): number {
-				return d.properties.p || d.properties.population || 0;
-			}
-			function getEnt(d: any): string {
-				return d.properties.e || d.properties.CVE_ENT || d.properties.id || '00';
-			}
-			function getName(d: any): string {
-				return d.properties.n || d.properties.NOMGEO || d.properties.name || 'Unknown';
-			}
-
-			function getColor(d: any): string {
-				if (colorVar === 'population') {
-					if (levelMode === 'mun') {
-						// Log scale for municipios: huge range from 81 to 1.9M
-						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
-						return scale(Math.max(500, getPop(d)));
-					} else {
-						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
-						return scale(Math.max(500000, getPop(d)));
-					}
-				} else if (colorVar === 'state') {
-					const idx = (parseInt(getEnt(d)) - 1) % stateColors.length;
-					return stateColors[idx];
-				} else if (colorVar === 'party_2024') {
-					const colors: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
-					return colors[d.properties.party_2024] || '#666';
-				} else if (colorVar === 'hdi') {
-					const scale = d3.scaleSequential(d3.interpolateRdYlGn).domain([0.65, 0.87]);
-					return scale(d.properties.hdi || 0.75);
+				document.getElementById('loading')!.remove();
+				new ResizeObserver(layout).observe(container);
+				layout();
+				if (reducedMotion) {
+					t = 1;
+					draw();
+				} else {
+					setTimeout(() => morphTo(1), 600);
 				}
-				return '#666';
+				renderLegend();
 			}
+
+			// Fit both maps to the canvas and convert every vertex to screen space once.
+			function layout() {
+				width = container.clientWidth;
+				height = Math.round(width * ASPECT);
+				const dpr = window.devicePixelRatio || 1;
+				for (const c of [base, overlay]) {
+					c.width = Math.round(width * dpr);
+					c.height = Math.round(height * dpr);
+					c.style.height = `${height}px`;
+					c.getContext('2d')!.setTransform(dpr, 0, 0, dpr, 0, 0);
+				}
+				const extent: [[number, number], [number, number]] = [[PAD, PAD], [width - PAD, height - PAD]];
+				const collection = (key: 'a' | 'b') => ({
+					type: 'FeatureCollection',
+					features: municipios.map((r) => ({ type: 'Feature', geometry: { type: 'MultiPolygon', coordinates: r.polygons[key] } })),
+				});
+				const pa = d3.geoIdentity().reflectY(true).fitExtent(extent, collection('a') as any);
+				const pb = d3.geoIdentity().reflectY(true).fitExtent(extent, collection('b') as any);
+				const project = (p: d3.GeoIdentityTransform, coords: number[][]) => {
+					const out = new Float32Array(coords.length * 2);
+					coords.forEach((c, i) => {
+						const [x, y] = p(c as [number, number])!;
+						out[2 * i] = x;
+						out[2 * i + 1] = y;
+					});
+					return out;
+				};
+				const box = (arrays: Float32Array[]) => {
+					let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+					for (const a of arrays) for (let i = 0; i < a.length; i += 2) {
+						x0 = Math.min(x0, a[i]); x1 = Math.max(x1, a[i]);
+						y0 = Math.min(y0, a[i + 1]); y1 = Math.max(y1, a[i + 1]);
+					}
+					return [x0, y0, x1, y1];
+				};
+				for (const r of [...municipios, ...states]) {
+					const ringsA = r.polygons.a.flat();
+					const ringsB = r.polygons.b.flat();
+					// If a shape's rings ever fail to pair up, draw it without morphing instead of failing.
+					const paired = ringsB.length === ringsA.length && ringsA.every((q, i) => q.length === ringsB[i].length);
+					r.rings = ringsA.map((ring, i) => ({ a: project(pa, ring), b: paired ? project(pb, ringsB[i]) : project(pa, ring) }));
+					r.boxA = box(r.rings.map((q) => q.a));
+					r.boxB = box(r.rings.map((q) => q.b));
+				}
+				for (const m of Object.values(meshes)) {
+					m.screen = m.lines.a.map((line, i) => ({ a: project(pa, line), b: project(pb, m.lines.b[i]) }));
+				}
+				draw();
+			}
+
+			function trace(ctx: CanvasRenderingContext2D, ring: Ring, close: boolean) {
+				const { a, b } = ring;
+				ctx.moveTo(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t);
+				for (let i = 2; i < a.length; i += 2) {
+					ctx.lineTo(a[i] + (b[i] - a[i]) * t, a[i + 1] + (b[i + 1] - a[i + 1]) * t);
+				}
+				if (close) ctx.closePath();
+			}
+
+			function color(r: Region) {
+				if (colorVar === 'state') return stateColors[(parseInt(r.state) - 1) % stateColors.length];
+				return level === 'mun' ? munScale(Math.max(500, r.population)) : stateScale(Math.max(500000, r.population));
+			}
+
+			function strokeMesh(ctx: CanvasRenderingContext2D, mesh: Mesh, style: string, lineWidth: number) {
+				ctx.beginPath();
+				for (const line of mesh.screen) trace(ctx, line, false);
+				ctx.strokeStyle = style;
+				ctx.lineWidth = lineWidth;
+				ctx.stroke();
+			}
+
+			function draw() {
+				const ctx = base.getContext('2d')!;
+				ctx.clearRect(0, 0, width, height);
+				ctx.lineJoin = 'round';
+				for (const r of level === 'mun' ? municipios : states) {
+					ctx.beginPath();
+					for (const ring of r.rings) trace(ctx, ring, true);
+					ctx.fillStyle = color(r);
+					ctx.fill('evenodd');
+				}
+				if (level === 'mun') strokeMesh(ctx, meshes.mun, 'rgba(0, 0, 0, 0.28)', 0.35);
+				strokeMesh(ctx, meshes.state, 'rgba(255, 255, 255, 0.45)', level === 'mun' ? 0.7 : 0.9);
+				strokeMesh(ctx, meshes.outline, 'rgba(255, 255, 255, 0.6)', 0.9);
+				drawHover();
+			}
+
+			function drawHover() {
+				const ctx = overlay.getContext('2d')!;
+				ctx.clearRect(0, 0, width, height);
+				if (!hovered) return;
+				ctx.beginPath();
+				for (const ring of hovered.rings) trace(ctx, ring, true);
+				ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
+				ctx.fill('evenodd');
+				ctx.strokeStyle = '#fbbf24';
+				ctx.lineWidth = 1.5;
+				ctx.stroke();
+			}
+
+			function morphTo(target: number) {
+				timer?.stop();
+				hovered = null;
+				hideTooltip();
+				const from = t;
+				if (reducedMotion || from === target) {
+					t = target;
+					draw();
+					return;
+				}
+				timer = d3.timer((elapsed) => {
+					const k = Math.min(1, elapsed / MORPH_MS);
+					t = from + (target - from) * d3.easeCubicInOut(k);
+					draw();
+					if (k === 1) {
+						timer!.stop();
+						timer = null;
+					}
+				});
+			}
+
+			function inside(ring: Float32Array, x: number, y: number) {
+				let hit = false;
+				for (let i = 0, j = ring.length - 2; i < ring.length; j = i, i += 2) {
+					const xi = ring[i], yi = ring[i + 1], xj = ring[j], yj = ring[j + 1];
+					if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi) hit = !hit;
+				}
+				return hit;
+			}
+
+			function regionAt(x: number, y: number): Region | null {
+				const useB = t === 1;
+				for (const r of level === 'mun' ? municipios : states) {
+					const [x0, y0, x1, y1] = useB ? r.boxB : r.boxA;
+					if (x < x0 || x > x1 || y < y0 || y > y1) continue;
+					let hit = false;
+					for (const ring of r.rings) if (inside(useB ? ring.b : ring.a, x, y)) hit = !hit;
+					if (hit) return r;
+				}
+				return null;
+			}
+
+			function hideTooltip() {
+				tooltip.style('opacity', 0);
+			}
+
+			function onPointer(event: PointerEvent) {
+				if (timer || !municipios.length) return;
+				const rect = base.getBoundingClientRect();
+				const found = regionAt(event.clientX - rect.left, event.clientY - rect.top);
+				if (found !== hovered) {
+					hovered = found;
+					drawHover();
+				}
+				if (!found) return hideTooltip();
+				const share = ((found.population / 126014024) * 100).toFixed(found.population < 126014 ? 3 : 2);
+				const where = level === 'mun' ? `<div class="tt-value">${names[found.state].name}</div>` : '';
+				tooltip
+					.style('opacity', 1)
+					.style('left', `${event.pageX + 12}px`)
+					.style('top', `${event.pageY - 10}px`)
+					.html(`<div class="tt-name">${found.name}</div>${where}
+						<div class="tt-value">${found.population.toLocaleString('en-US')} people · ${share}% of Mexico</div>`);
+			}
+
+			base.addEventListener('pointermove', onPointer);
+			base.addEventListener('pointerdown', onPointer);
+			base.addEventListener('pointerleave', () => {
+				hovered = null;
+				drawHover();
+				hideTooltip();
+			});
 
 			function renderLegend() {
 				const legend = d3.select('#legend');
 				legend.html('');
-				if (colorVar === 'population') {
-					if (levelMode === 'mun') {
-						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
-						const steps = [1000, 10000, 50000, 200000, 500000, 2000000];
-						steps.forEach(v => {
-							const label = v >= 1000000 ? `${(v/1000000).toFixed(0)}M` : `${(v/1000).toFixed(0)}K`;
-							legend.append('div').attr('class', 'legend-item')
-								.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
-						});
-					} else {
-						const scale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
-						const steps = [700000, 2000000, 5000000, 10000000, 17000000];
-						steps.forEach(v => {
-							const label = `${(v/1000000).toFixed(0)}M`;
-							legend.append('div').attr('class', 'legend-item')
-								.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
-						});
-					}
-				} else if (colorVar === 'party_2024') {
-					const parties: Record<string, string> = { 'MORENA': '#8B1A1A', 'PAN': '#1E3A8A', 'MC': '#F97316' };
-					Object.entries(parties).forEach(([p, c]) => {
-						legend.append('div').attr('class', 'legend-item')
-							.html(`<div class="legend-swatch" style="background:${c}"></div>${p}`);
-					});
+				if (colorVar !== 'population') return;
+				const [scale, steps] = level === 'mun'
+					? [munScale, [1000, 10000, 50000, 200000, 500000, 2000000]]
+					: [stateScale, [700000, 2000000, 5000000, 10000000, 17000000]];
+				for (const v of steps) {
+					const label = v >= 1000000 ? `${(v / 1000000).toFixed(0)}M` : `${(v / 1000).toFixed(0)}K`;
+					legend.append('div').attr('class', 'legend-item')
+						.html(`<div class="legend-swatch" style="background:${scale(v)}"></div>${label}`);
 				}
 			}
 
-			function render() {
-				const key = getDataKey();
-				const geo = data[key];
-				if (!geo) return;
-
-				const projection = d3.geoMercator().fitSize([width, height], geo);
-				const path = d3.geoPath().projection(projection);
-
-				svg.selectAll('path').remove();
-
-				svg.selectAll('path')
-					.data(geo.features)
-					.join('path')
-					.attr('d', path as any)
-					.attr('fill', (d: any) => getColor(d))
-					.attr('stroke', levelMode === 'mun' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)')
-					.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5)
-					.on('mouseover', function(event: MouseEvent, d: any) {
-						d3.select(this)
-							.attr('stroke', '#fbbf24')
-							.attr('stroke-width', levelMode === 'mun' ? 1 : 2)
-							.raise();
-						const pop = getPop(d);
-						tooltip.style('opacity', 1)
-							.html(`<div class="tt-name">${getName(d)}</div>
-								<div class="tt-value">Pop: ${pop ? pop.toLocaleString() : 'N/A'}</div>`);
-					})
-					.on('mousemove', function(event: MouseEvent) {
-						tooltip
-							.style('left', (event.pageX + 12) + 'px')
-							.style('top', (event.pageY - 10) + 'px');
-					})
-					.on('mouseout', function() {
-						d3.select(this)
-							.attr('stroke', levelMode === 'mun' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.2)')
-							.attr('stroke-width', levelMode === 'mun' ? 0.25 : 0.5);
-						tooltip.style('opacity', 0);
-					});
-
-				renderLegend();
+			function setActive(ids: string[], activeId: string) {
+				for (const id of ids) document.getElementById(id)!.classList.toggle('active', id === activeId);
 			}
 
-			// Map mode toggle
-			document.getElementById('btn-cartogram')?.addEventListener('click', () => {
-				mapMode = 'cartogram';
-				document.getElementById('btn-cartogram')?.classList.add('active');
-				document.getElementById('btn-normal')?.classList.remove('active');
-				render();
+			document.getElementById('btn-cartogram')!.addEventListener('click', () => {
+				setActive(['btn-cartogram', 'btn-normal'], 'btn-cartogram');
+				morphTo(1);
 			});
-			document.getElementById('btn-normal')?.addEventListener('click', () => {
-				mapMode = 'normal';
-				document.getElementById('btn-normal')?.classList.add('active');
-				document.getElementById('btn-cartogram')?.classList.remove('active');
-				render();
+			document.getElementById('btn-normal')!.addEventListener('click', () => {
+				setActive(['btn-cartogram', 'btn-normal'], 'btn-normal');
+				morphTo(0);
 			});
-
-			// Level toggle
-			document.getElementById('btn-mun')?.addEventListener('click', () => {
-				levelMode = 'mun';
-				document.getElementById('btn-mun')?.classList.add('active');
-				document.getElementById('btn-state')?.classList.remove('active');
-				// Update color options
-				updateColorButtons();
-				render();
-			});
-			document.getElementById('btn-state')?.addEventListener('click', () => {
-				levelMode = 'state';
-				document.getElementById('btn-state')?.classList.add('active');
-				document.getElementById('btn-mun')?.classList.remove('active');
-				updateColorButtons();
-				render();
-			});
-
-			function updateColorButtons() {
-				const btns = document.querySelectorAll('.color-btn');
-				btns.forEach(b => {
-					const v = b.getAttribute('data-variable');
-					if (levelMode === 'mun' && (v === 'party_2024' || v === 'hdi')) {
-						(b as HTMLElement).style.display = 'none';
-					} else {
-						(b as HTMLElement).style.display = '';
-					}
+			for (const [id, value] of [['btn-mun', 'mun'], ['btn-state', 'state']] as const) {
+				document.getElementById(id)!.addEventListener('click', () => {
+					setActive(['btn-mun', 'btn-state'], id);
+					level = value;
+					hovered = null;
+					hideTooltip();
+					renderLegend();
+					draw();
 				});
-				// Reset to population if current is hidden
-				if (levelMode === 'mun' && (colorVar === 'party_2024' || colorVar === 'hdi')) {
-					colorVar = 'population';
-					btns.forEach(b => {
-						b.classList.toggle('active', b.getAttribute('data-variable') === 'population');
-					});
-				}
 			}
-
-			// Color variable buttons
-			document.querySelectorAll('.color-btn').forEach(btn => {
+			document.querySelectorAll('.color-btn').forEach((btn) => {
 				btn.addEventListener('click', () => {
-					document.querySelectorAll('.color-btn').forEach(b => b.classList.remove('active'));
-					btn.classList.add('active');
+					document.querySelectorAll('.color-btn').forEach((b) => b.classList.toggle('active', b === btn));
 					colorVar = btn.getAttribute('data-variable') || 'population';
-					render();
+					renderLegend();
+					draw();
 				});
 			});
 
-			loadData();
+			load();
 		</script>
 	</body>
 </html>

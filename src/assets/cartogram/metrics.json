@@ -1,0 +1,33 @@
+{
+  "normal": {
+    "municipios": 2469,
+    "population": 126014024,
+    "area_error_median_pct": 82.5,
+    "area_error_p90_pct": 920.2,
+    "area_error_max_pct": 60644.54,
+    "area_error_pop_weighted_pct": 127.958,
+    "invalid_polygons": 7,
+    "self_crossing_pct_of_area": 0.0,
+    "overlap_pct_of_area": 0.0
+  },
+  "cartogram": {
+    "municipios": 2469,
+    "population": 126014024,
+    "area_error_median_pct": 0.92,
+    "area_error_p90_pct": 1.8,
+    "area_error_max_pct": 438.95,
+    "area_error_pop_weighted_pct": 1.889,
+    "invalid_polygons": 836,
+    "self_crossing_pct_of_area": 0.0511,
+    "overlap_pct_of_area": 0.195
+  },
+  "settings": {
+    "simplify_interval_m": 100,
+    "densify_max_segment_m": 2000,
+    "engine_args": [
+      "-N",
+      "8192"
+    ],
+    "points": 285155
+  }
+}
