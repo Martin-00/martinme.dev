@@ -257,7 +257,7 @@ None of this shows up in a Vercel deploy. All of it shows up in an AWS certifica
 
 ## Six months later: what the setup missed
 
-The architecture held up. Four details didn't, and I fixed them with Claude as my pair. Each fix left behind a mental model I now use everywhere.
+The architecture held up. Five details didn't, and I fixed them with Claude as my pair. Each fix left behind a mental model I now use everywhere.
 
 **1. The pipeline mirrors the repo, so the repo must be the truth.** In April I uploaded a new essay straight to S3 from my other laptop and never committed it. Because the deploy runs `s3 sync --delete`, the next push would have deleted it from the live site. Claude caught it by comparing the live site against the repo, then confirmed nothing else had drifted by building locally and diffing every page byte for byte against production. ([The full story](/writings/the-neurochemical-illusion-of-ai/).)
 *Model: never deploy by hand, and diff what you're about to ship against what's live.*
@@ -270,6 +270,9 @@ The architecture held up. Four details didn't, and I fixed them with Claude as m
 
 **4. Measure the file you ship.** When we switched the background to the Hubble Legacy Field, Claude measured a quality-95 encode, then saved it through the encoder a second time, which silently recompressed it at the default quality. The tell: the live file was 274 KB, not the 781 KB that had been measured. Checking `content-length` in production caught what the local test missed.
 *Model: test the artifact that actually ships, not the one in memory.*
+
+**5. A calculated order needs a unique sort key.** Essays are numbered by publication date. When two went out on the same day, the dates tied, the build broke the tie by file order, and an already-published essay changed from #05 to #06. The fix was recording each essay's real publish time, so the order comes from a complete fact.
+*Model: if two items can tie on the sort key, the order is arbitrary. Make the key unique.*
 
 ## Design principles
 
