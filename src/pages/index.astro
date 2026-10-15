@@ -2,17 +2,21 @@
 import { getCollection } from 'astro:content';
 import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
-import FormattedDate from '../components/FormattedDate.astro';
 import Header from '../components/Header.astro';
 import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
-const posts = (await getCollection('blog'))
-	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf())
-	.slice(0, 5);
+const allPosts = (await getCollection('blog'))
+	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+// Essay numbers count up in publication order, so #01 is always the first essay.
+const posts = allPosts.slice(0, 5).map((post, i) => ({
+	post,
+	number: String(allPosts.length - i).padStart(2, '0'),
+	isoDate: post.data.pubDate.toISOString().slice(0, 10),
+}));
 
 const projects = [
-	{ href: '/cartogram', title: 'Mexico Population Cartogram', meta: 'Interactive map' },
-	{ href: '/writings/how-i-deployed-martinme-dev/', title: 'This site', meta: 'AWS for $0.51/month' },
+	{ href: '/cartogram', title: 'Mexico Population Cartogram', meta: 'interactive map' },
+	{ href: '/writings/how-i-deployed-martinme-dev/', title: 'This site', meta: 'aws · $0.51/month' },
 ];
 ---
 
@@ -22,45 +26,62 @@ const projects = [
 		<BaseHead title={SITE_TITLE} description={SITE_DESCRIPTION} keywords="Martin Morales, data engineer, AWS, Monterrey Mexico, cloud architecture, data visualization, cartogram, Terraform, OIDC" />
 		<style>
 			.home {
+				--mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
 				max-width: 40em;
 				margin: 0 auto;
-				padding: 1em 0;
+				padding: 2.5em 0 1.5em;
 			}
-			.intro header {
-				text-align: center;
-			}
-			.intro h1 {
-				font-size: 1.8em;
+			.hero h1 {
+				font-size: 2.9em;
 				font-weight: 650;
+				letter-spacing: -0.025em;
+				line-height: 1.05;
 				margin: 0;
 			}
-			.intro .subtitle {
-				font-size: 0.95em;
-				color: rgba(255, 255, 255, 0.5);
-				margin: 0.2em 0 0;
+			.hero .role {
+				font-family: var(--mono);
+				font-size: 0.7em;
+				letter-spacing: 0.04em;
+				color: rgba(255, 255, 255, 0.55);
+				margin: 1em 0 0;
 			}
-			.intro hr {
-				margin: 1.25em 0;
+			.hero .role .sep {
+				color: var(--accent);
+				margin: 0 0.6em;
+			}
+			.manifesto {
+				font-size: 1.45em;
+				font-style: italic;
+				line-height: 1.35;
+				color: #ffffff;
+				margin: 1.3em 0 0.8em;
+			}
+			.intro {
+				color: rgba(255, 255, 255, 0.78);
+				margin: 0;
 			}
 			section {
-				margin-top: 2.5em;
+				margin-top: 3em;
 			}
 			.section-head {
 				display: flex;
 				justify-content: space-between;
 				align-items: baseline;
-				padding-bottom: 0.4em;
-				border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.5);
+				padding-bottom: 0.8em;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 			}
 			.section-head h2 {
-				font-size: 0.95em;
-				font-variant: small-caps;
-				letter-spacing: 0.08em;
-				color: rgba(255, 255, 255, 0.8);
+				font: inherit;
+				color: inherit;
+				letter-spacing: inherit;
 				margin: 0;
 			}
 			.section-head a {
-				font-size: 0.8em;
 				text-decoration: none;
 			}
 			.entries {
@@ -70,30 +91,48 @@ const projects = [
 			}
 			.entries li {
 				margin: 0;
-				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+				border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 			}
 			.entries a {
-				display: flex;
-				justify-content: space-between;
+				display: grid;
+				grid-template-columns: 2.4em 1fr auto;
+				gap: 1em;
 				align-items: baseline;
-				gap: 1.5em;
-				padding: 0.65em 0;
+				padding: 0.85em 0;
 				color: #f0f0f0;
 				text-decoration: none;
+			}
+			.entries .idx,
+			.entries .meta {
+				font-family: var(--mono);
+				font-size: 0.68em;
+				color: rgba(255, 255, 255, 0.38);
 				transition: color 0.15s ease;
 			}
-			.entries a:hover {
+			.entries .title {
+				font-size: 1.08em;
+				transition: color 0.15s ease;
+			}
+			.entries a:hover .title,
+			.entries a:hover .idx {
 				color: var(--accent);
 			}
-			.entries .meta {
-				flex-shrink: 0;
-				font-size: 0.75em;
-				color: rgba(255, 255, 255, 0.4);
-			}
 			@media (max-width: 720px) {
+				.home {
+					padding-top: 1em;
+				}
+				.hero h1 {
+					font-size: 2.3em;
+				}
+				.manifesto {
+					font-size: 1.25em;
+				}
 				.entries a {
-					flex-direction: column;
-					gap: 0.1em;
+					grid-template-columns: 2em 1fr;
+					row-gap: 0.2em;
+				}
+				.entries .meta {
+					grid-column: 2;
 				}
 			}
 		</style>
@@ -103,35 +142,31 @@ const projects = [
 		<main>
 			<div class="glass-card">
 				<div class="home">
-					<div class="intro">
-						<header>
-							<h1>Martin M. E.</h1>
-							<p class="subtitle">Data Engineer. Builder. Monterrey, Mexico.</p>
-						</header>
-						<hr />
-						<p>
+					<div class="hero">
+						<h1>Martin M. E.</h1>
+						<p class="role">data engineer<span class="sep">·</span>builder<span class="sep">·</span>monterrey, mx</p>
+						<p class="manifesto">Technology is a vehicle. Where it goes matters more than how fast it moves.</p>
+						<p class="intro">
 							Hello! I build cloud infrastructure and data systems on AWS at
 							<a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>.
-						</p>
-						<p>
-							I care about the welfare of all beings, and about whether the things we build
-							make the world better or just faster. Technology is a vehicle. Where it goes
-							matters more than how fast it moves. <a href="/about">More about me →</a>
+							I care about the welfare of all beings, and about whether the things we build make
+							the world better or just faster. <a href="/about">More about me →</a>
 						</p>
 					</div>
 
 					<section>
 						<div class="section-head">
 							<h2>Writings</h2>
-							<a href="/writings">All writings →</a>
+							<a href="/writings">all writings →</a>
 						</div>
 						<ul class="entries">
 							{
-								posts.map((post) => (
+								posts.map(({ post, number, isoDate }) => (
 									<li>
 										<a href={`/writings/${post.id}/`}>
-											<span>{post.data.title}</span>
-											<span class="meta"><FormattedDate date={post.data.pubDate} /></span>
+											<span class="idx">{number}</span>
+											<span class="title">{post.data.title}</span>
+											<time class="meta" datetime={isoDate}>{isoDate}</time>
 										</a>
 									</li>
 								))
@@ -142,14 +177,15 @@ const projects = [
 					<section>
 						<div class="section-head">
 							<h2>Projects</h2>
-							<a href="/projects">All projects →</a>
+							<a href="/projects">all projects →</a>
 						</div>
 						<ul class="entries">
 							{
 								projects.map((project) => (
 									<li>
 										<a href={project.href}>
-											<span>{project.title}</span>
+											<span class="idx">→</span>
+											<span class="title">{project.title}</span>
 											<span class="meta">{project.meta}</span>
 										</a>
 									</li>
