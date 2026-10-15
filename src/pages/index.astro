@@ -8,6 +8,8 @@ import { SITE_DESCRIPTION, SITE_TITLE } from '../consts';
 
 const posts = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const lastActivity = (post: (typeof posts)[number]) => post.data.updatedDate ?? post.data.pubDate;
+const latest = [...posts].sort((a, b) => lastActivity(b).valueOf() - lastActivity(a).valueOf())[0];
 ---
 
 <!doctype html>
@@ -106,21 +108,15 @@ const posts = (await getCollection('blog'))
 				color: rgba(255, 255, 255, 0.45);
 				margin: 0.3em 0 0;
 			}
-			.project-card.coming-soon {
-				border-style: dashed;
+			.project-card .card-label {
+				font-size: 0.72em;
+				font-variant: small-caps;
+				letter-spacing: 0.08em;
+				color: var(--accent);
+				margin: 0 0 0.4em;
 			}
-			.project-card.coming-soon .card-title {
-				color: rgba(255, 255, 255, 0.35);
-				font-style: italic;
-			}
-			.project-card.coming-soon:hover {
-				transform: none;
-				border-color: rgba(255, 255, 255, 0.15);
-				background: rgba(255, 255, 255, 0.03);
-				cursor: default;
-			}
-			.project-card.coming-soon:hover .card-title {
-				color: rgba(255, 255, 255, 0.35);
+			.project-card.latest {
+				margin: 1.25em 0;
 			}
 			.writings-section {
 				margin-top: 1.25em;
@@ -176,41 +172,25 @@ const posts = (await getCollection('blog'))
 				<div class="layout">
 					<div class="about-col">
 						<p>
-							Hello! I'm <strong>Martin M. E.</strong> I care about the welfare
-							of all beings, the future of existence, and the question of whether the things
-							we build are making the world better or just making it faster. I think about
-							animal welfare, the responsible development of AI, open data for public good,
-							ecology, ethics, and what good leadership actually looks like.
-						</p>
-						<p>
-							I am a <span class="accent">Data Engineer</span> at
+							Hello! I'm <strong>Martin M. E.</strong>, a <span class="accent">Data Engineer</span> at
 							<a href="https://caylent.com" target="_blank" rel="noopener noreferrer">Caylent</a>,
-							an AWS consulting company that has given me the space, the mentorship, and the
-							real-world projects to grow as an engineer. Based in Monterrey, Mexico.
-							I build cloud infrastructure and data systems on AWS. I think in systems,
-							tradeoffs, and diagrams. I believe the superpower behind every great system
-							isn't genius but iteration: build a small piece, test it, fix it, build more.
-							I care about understanding <em>why</em> things work, not just how to
-							configure them. Technology is a vehicle. Where it goes matters more than how
-							fast it moves.
+							based in Monterrey, Mexico. I build cloud infrastructure and data systems on AWS.
 						</p>
 						<p>
-							Beyond engineering, I'm a deeply curious person. I love maps, geography,
-							and data visualization. I fall into rabbit holes about history, the universe,
-							human inventions, and whatever mystery grabbed my attention this week. I love
-							cinema, music that carries meaning, art, and architecture. I love sports:
-							cycling, running, soccer, and lifting. I care about optimal health and
-							longevity: whole foods, sunlight, movement, and the belief that disease,
-							suffering, and aging are problems we can solve with enough collective will
-							and technology. I try to live by the scientific method: question your
-							conclusions, question whether you're asking the right question, update
-							when the evidence says so.
+							I care about the welfare of all beings, and about whether the things we build
+							make the world better or just faster. The superpower behind every great system
+							isn't genius but iteration. Technology is a vehicle. Where it goes matters more
+							than how fast it moves.
 						</p>
+						<a href={`/writings/${latest.id}/`} class="project-card latest">
+							<p class="card-label">Latest · <FormattedDate date={lastActivity(latest)} /></p>
+							<p class="card-title">{latest.data.title}</p>
+							<p class="card-desc">{latest.data.description}</p>
+						</a>
 						<p class="nav-text">
-							<span class="smallcaps">Navigation:</span>
-							For my technical writing, see <a href="/writings">writings</a>;
-							for background and philosophy, see the <a href="/about">about page</a>;
-							for code, see <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
+							<span class="smallcaps">More:</span>
+							what I believe and what I love, on the <a href="/about">about page</a>;
+							code on <a href="https://github.com/Martin-00" target="_blank" rel="noopener noreferrer">GitHub</a>.
 						</p>
 						<p class="nav-text">
 							<span class="smallcaps">Stack:</span>
@@ -229,15 +209,15 @@ const posts = (await getCollection('blog'))
 							<p class="card-title">Mexico Cartogram</p>
 							<p class="card-desc">Interactive population map.</p>
 						</a>
-						<div class="project-card coming-soon">
-							<p class="card-title">Coming soon</p>
-							<p class="card-desc">More is being built.</p>
-						</div>
+						<a href="/writings/how-i-deployed-martinme-dev/" class="project-card">
+							<p class="card-title">This Site</p>
+							<p class="card-desc">AWS for $0.51/month, zero stored keys.</p>
+						</a>
 					</div>
 				</div>
 
 				<div class="writings-section">
-					<h3>Top Writings</h3>
+					<h3>Writings</h3>
 					<ul class="writings-list">
 						{
 							posts.map((post) => (
