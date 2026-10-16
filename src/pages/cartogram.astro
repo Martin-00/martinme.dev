@@ -3,9 +3,11 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import metrics from '../assets/cartogram/metrics.json';
+import variables from '../assets/cartogram/variables.json';
 
 const carto = metrics.cartogram;
 const points = metrics.settings.points.toLocaleString('en-US');
+const groups = [...new Set(variables.variables.map((v) => v.group))];
 ---
 
 <!doctype html>
@@ -95,6 +97,109 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				.control-separator {
 					display: none;
 				}
+			}
+			.color-picker select,
+			.copy-link,
+			.search input {
+				background: rgba(255, 255, 255, 0.05);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				color: rgba(255, 255, 255, 0.85);
+				font-family: 'Source Serif', Georgia, serif;
+				font-size: 0.75em;
+				letter-spacing: 0.03em;
+				padding: 0.35em 0.7em;
+			}
+			.color-picker {
+				max-width: 100%;
+			}
+			.color-picker select {
+				cursor: pointer;
+				max-width: 100%;
+			}
+			.color-picker select:focus,
+			.search input:focus {
+				outline: none;
+				border-color: var(--accent);
+			}
+			.color-picker option,
+			.color-picker optgroup {
+				background: #0a0f1e;
+				color: #f0f0f0;
+			}
+			.finder {
+				display: flex;
+				justify-content: center;
+				gap: 0.5em;
+				margin-bottom: 0.75em;
+			}
+			.search {
+				position: relative;
+				flex: 1 1 auto;
+				max-width: 22em;
+			}
+			.search input {
+				width: 100%;
+				box-sizing: border-box;
+			}
+			.copy-link {
+				cursor: pointer;
+				white-space: nowrap;
+			}
+			.copy-link:hover {
+				color: var(--accent);
+			}
+			.search-results {
+				position: absolute;
+				z-index: 300;
+				left: 0;
+				right: 0;
+				top: 100%;
+				margin: 2px 0 0;
+				padding: 0.25em 0;
+				list-style: none;
+				background: rgba(5, 10, 25, 0.97);
+				border: 1px solid rgba(255, 255, 255, 0.15);
+				max-height: 18em;
+				overflow-y: auto;
+			}
+			.search-results :global(li) {
+				margin: 0;
+				padding: 0.3em 0.75em;
+				font-size: 0.8em;
+				color: rgba(255, 255, 255, 0.85);
+				cursor: pointer;
+			}
+			.search-results :global(li.active),
+			.search-results :global(li:hover) {
+				background: rgba(251, 191, 36, 0.12);
+				color: var(--accent);
+			}
+			.search-results :global(.state) {
+				color: rgba(255, 255, 255, 0.45);
+			}
+			.selection {
+				text-align: center;
+				font-size: 0.85em;
+				color: rgba(255, 255, 255, 0.75);
+				margin: 0.6em 0 0;
+			}
+			.selection :global(strong) {
+				color: var(--accent);
+			}
+			.legend :global(.legend-bar) {
+				position: relative;
+				width: 12em;
+				height: 10px;
+				border-radius: 2px;
+				border: 1px solid rgba(255, 255, 255, 0.1);
+			}
+			.legend :global(.legend-marker) {
+				position: absolute;
+				top: -4px;
+				bottom: -4px;
+				width: 2px;
+				margin-left: -1px;
+				background: #ffffff;
 			}
 			.map {
 				position: relative;
@@ -210,10 +315,26 @@ const points = metrics.settings.points.toLocaleString('en-US');
 						<button id="btn-state">States</button>
 					</div>
 					<div class="control-separator"></div>
-					<div class="control-group">
-						<button class="color-btn active" data-variable="population">Population</button>
-						<button class="color-btn" data-variable="state">By state</button>
+					<label class="color-picker">
+						<span class="sr-only">Color the map by</span>
+						<select id="color-select">
+							<option value="population">Color: population</option>
+							<option value="state">Color: state</option>
+							{groups.map((g) => (
+								<optgroup label={g}>
+									{variables.variables.filter((v) => v.group === g).map((v) => <option value={v.id}>{v.label}</option>)}
+								</optgroup>
+							))}
+						</select>
+					</label>
+				</div>
+
+				<div class="finder">
+					<div class="search">
+						<input id="search" type="search" placeholder="Find your municipio" autocomplete="off" spellcheck="false" aria-label="Find a municipio" aria-controls="search-results" />
+						<ul id="search-results" class="search-results" role="listbox" hidden></ul>
 					</div>
+					<button id="copy-link" class="copy-link" type="button">Copy link</button>
 				</div>
 
 				<div class="map" id="map">
@@ -222,6 +343,7 @@ const points = metrics.settings.points.toLocaleString('en-US');
 					<canvas id="map-overlay" aria-hidden="true"></canvas>
 				</div>
 				<div id="legend" class="legend"></div>
+				<p id="selection" class="selection" aria-live="polite" hidden></p>
 				<div class="tooltip" id="tooltip"></div>
 
 				<div class="explanation">
@@ -275,7 +397,7 @@ const points = metrics.settings.points.toLocaleString('en-US');
 					</p>
 					<p>Measured on the final map, comparing each municipio's area with its share of the population:</p>
 					<ul>
-						<li>Median area error: {carto.area_error_median_pct}%, population-weighted: {carto.area_error_pop_weighted_pct}%</li>
+						<li>Median area error: {carto.area_error_median_pct}%, population-weighted: {carto.area_error_weighted_pct}%</li>
 						<li>Worst municipio: {carto.area_error_max_pct}%</li>
 						<li>Overlap between municipios: {carto.overlap_pct_of_area}% of the map</li>
 						<li>
@@ -283,6 +405,11 @@ const points = metrics.settings.points.toLocaleString('en-US');
 							covering {carto.self_crossing_pct_of_area}% of the map, almost all smaller than a pixel
 						</li>
 					</ul>
+					<p>
+						The colors come from the same census. Each rate uses INEGI's own denominator (people
+						aged 3+ for languages, occupied homes for housing), and state and national figures are
+						INEGI's official totals, never averages of municipios.
+					</p>
 					<p>
 						The whole pipeline, from INEGI's files to these numbers, is reproducible from the
 						repository. The map renders on a canvas in your browser; the site runs on AWS S3 and
@@ -304,6 +431,7 @@ const points = metrics.settings.points.toLocaleString('en-US');
 			import * as topojson from 'topojson-client';
 			import topoUrl from '../assets/cartogram/mexico.topo.json?url';
 			import stateInfo from '../assets/cartogram/states.json';
+			import variables from '../assets/cartogram/variables.json';
 
 			type Ring = { a: Float32Array; b: Float32Array };
 			type Region = {
@@ -317,6 +445,7 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				boxB: number[];
 			};
 			type Mesh = { lines: { a: number[][][]; b: number[][][] }; screen: Ring[] };
+			type Variable = (typeof variables.variables)[number];
 
 			const PAD = 8;
 			const ASPECT = 0.64;
@@ -338,6 +467,10 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				'#9b59b6', '#f39c12', '#1abc9c', '#e67e22', '#2980b9',
 				'#27ae60', '#8e44ad'
 			];
+			const vars = new Map<string, Variable>(variables.variables.map((v) => [v.id, v]));
+			const idIndex = new Map<string, number>(variables.ids.map((id, i) => [id, i]));
+			const rateScales = new Map<string, d3.ScaleSequential<string>>(variables.variables.map((v) =>
+				[v.id, d3.scaleSequential(d3.interpolateYlGnBu).domain(v.domain as [number, number]).clamp(true)]));
 			const munScale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500, 2000000]);
 			const stateScale = d3.scaleSequentialLog(d3.interpolateYlOrRd).domain([500000, 17000000]);
 
@@ -346,6 +479,8 @@ const points = metrics.settings.points.toLocaleString('en-US');
 			let colorVar = 'population';
 			let timer: d3.Timer | null = null;
 			let hovered: Region | null = null;
+			let selected: Region | null = null;
+			let view: 'cartogram' | 'normal' = 'cartogram';
 			let municipios: Region[] = [];
 			let states: Region[] = [];
 			let meshes: Record<'mun' | 'state' | 'outline', Mesh>;
@@ -407,15 +542,20 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				};
 
 				document.getElementById('loading')!.remove();
+				applyURL();
 				new ResizeObserver(layout).observe(container);
 				layout();
-				if (reducedMotion) {
+				if (view === 'normal') {
+					t = 0;
+					draw();
+				} else if (reducedMotion) {
 					t = 1;
 					draw();
 				} else {
 					setTimeout(() => morphTo(1), 600);
 				}
 				renderLegend();
+				renderSelection();
 			}
 
 			// Fit both maps to the canvas and convert every vertex to screen space once.
@@ -477,8 +617,17 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				if (close) ctx.closePath();
 			}
 
+			function valueOf(r: Region, id: string): number {
+				return level === 'mun'
+					? variables.municipios[id as keyof typeof variables.municipios][idIndex.get(r.id)!]
+					: (variables.states as Record<string, Record<string, number>>)[r.id][id];
+			}
+
+			const format = (v: Variable, x: number) => (v.unit === '%' ? `${x.toFixed(x < 1 ? 2 : 1)}%` : `${x.toFixed(1)} years`);
+
 			function color(r: Region) {
 				if (colorVar === 'state') return stateColors[(parseInt(r.state) - 1) % stateColors.length];
+				if (vars.has(colorVar)) return rateScales.get(colorVar)!(valueOf(r, colorVar));
 				return level === 'mun' ? munScale(Math.max(500, r.population)) : stateScale(Math.max(500000, r.population));
 			}
 
@@ -509,14 +658,16 @@ const points = metrics.settings.points.toLocaleString('en-US');
 			function drawHover() {
 				const ctx = overlay.getContext('2d')!;
 				ctx.clearRect(0, 0, width, height);
-				if (!hovered) return;
-				ctx.beginPath();
-				for (const ring of hovered.rings) trace(ctx, ring, true);
-				ctx.fillStyle = 'rgba(255, 255, 255, 0.12)';
-				ctx.fill('evenodd');
-				ctx.strokeStyle = '#fbbf24';
-				ctx.lineWidth = 1.5;
-				ctx.stroke();
+				for (const [r, fill, lineWidth] of [[selected, 'rgba(251, 191, 36, 0.18)', 2.5], [hovered, 'rgba(255, 255, 255, 0.12)', 1.5]] as const) {
+					if (!r) continue;
+					ctx.beginPath();
+					for (const ring of r.rings) trace(ctx, ring, true);
+					ctx.fillStyle = fill;
+					ctx.fill('evenodd');
+					ctx.strokeStyle = '#fbbf24';
+					ctx.lineWidth = lineWidth;
+					ctx.stroke();
+				}
 			}
 
 			function morphTo(target: number) {
@@ -576,16 +727,23 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				if (!found) return hideTooltip();
 				const share = ((found.population / 126014024) * 100).toFixed(found.population < 126014 ? 3 : 2);
 				const where = level === 'mun' ? `<div class="tt-value">${names[found.state].name}</div>` : '';
+				const v = vars.get(colorVar);
+				const rate = v ? `<div class="tt-value">${v.label}: ${format(v, valueOf(found, v.id))} (Mexico ${format(v, v.national)})</div>` : '';
 				tooltip
 					.style('opacity', 1)
 					.style('left', `${event.pageX + 12}px`)
 					.style('top', `${event.pageY - 10}px`)
 					.html(`<div class="tt-name">${found.name}</div>${where}
-						<div class="tt-value">${found.population.toLocaleString('en-US')} people · ${share}% of Mexico</div>`);
+						<div class="tt-value">${found.population.toLocaleString('en-US')} people · ${share}% of Mexico</div>${rate}`);
 			}
 
 			base.addEventListener('pointermove', onPointer);
 			base.addEventListener('pointerdown', onPointer);
+			base.addEventListener('click', (event) => {
+				if (timer || !municipios.length) return;
+				const rect = base.getBoundingClientRect();
+				select(regionAt(event.clientX - rect.left, event.clientY - rect.top));
+			});
 			base.addEventListener('pointerleave', () => {
 				hovered = null;
 				drawHover();
@@ -595,6 +753,19 @@ const points = metrics.settings.points.toLocaleString('en-US');
 			function renderLegend() {
 				const legend = d3.select('#legend');
 				legend.html('');
+				const v = vars.get(colorVar);
+				if (v) {
+					const [lo, hi] = v.domain;
+					const scale = rateScales.get(v.id)!;
+					const stops = d3.range(0, 1.0001, 0.1).map((k) => scale(lo + (hi - lo) * k)).join(', ');
+					const at = Math.max(0, Math.min(100, ((v.national - lo) / (hi - lo)) * 100));
+					legend.append('div').attr('class', 'legend-item').text(`≤ ${format(v, lo)}`);
+					legend.append('div').attr('class', 'legend-bar').style('background', `linear-gradient(to right, ${stops})`)
+						.append('div').attr('class', 'legend-marker').style('left', `${at}%`).attr('title', 'Mexico');
+					legend.append('div').attr('class', 'legend-item').text(`≥ ${format(v, hi)}`);
+					legend.append('div').attr('class', 'legend-item').text(`· white mark: Mexico ${format(v, v.national)}`);
+					return;
+				}
 				if (colorVar !== 'population') return;
 				const [scale, steps] = level === 'mun'
 					? [munScale, [1000, 10000, 50000, 200000, 500000, 2000000]]
@@ -610,31 +781,154 @@ const points = metrics.settings.points.toLocaleString('en-US');
 				for (const id of ids) document.getElementById(id)!.classList.toggle('active', id === activeId);
 			}
 
+			function setView(next: 'cartogram' | 'normal') {
+				view = next;
+				setActive(['btn-cartogram', 'btn-normal'], next === 'cartogram' ? 'btn-cartogram' : 'btn-normal');
+				syncURL();
+			}
 			document.getElementById('btn-cartogram')!.addEventListener('click', () => {
-				setActive(['btn-cartogram', 'btn-normal'], 'btn-cartogram');
+				setView('cartogram');
 				morphTo(1);
 			});
 			document.getElementById('btn-normal')!.addEventListener('click', () => {
-				setActive(['btn-cartogram', 'btn-normal'], 'btn-normal');
+				setView('normal');
 				morphTo(0);
 			});
-			for (const [id, value] of [['btn-mun', 'mun'], ['btn-state', 'state']] as const) {
-				document.getElementById(id)!.addEventListener('click', () => {
-					setActive(['btn-mun', 'btn-state'], id);
-					level = value;
-					hovered = null;
-					hideTooltip();
-					renderLegend();
-					draw();
-				});
+
+			function setLevel(next: 'mun' | 'state') {
+				if (next === level) return;
+				// A selected municipio becomes its state; a selected state can't become one municipio.
+				selected = next === 'state' && selected ? states.find((s) => s.id === selected!.state) ?? null : null;
+				level = next;
+				setActive(['btn-mun', 'btn-state'], next === 'mun' ? 'btn-mun' : 'btn-state');
+				hovered = null;
+				hideTooltip();
+				renderLegend();
+				renderSelection();
+				draw();
+				syncURL();
 			}
-			document.querySelectorAll('.color-btn').forEach((btn) => {
-				btn.addEventListener('click', () => {
-					document.querySelectorAll('.color-btn').forEach((b) => b.classList.toggle('active', b === btn));
-					colorVar = btn.getAttribute('data-variable') || 'population';
-					renderLegend();
-					draw();
-				});
+			document.getElementById('btn-mun')!.addEventListener('click', () => setLevel('mun'));
+			document.getElementById('btn-state')!.addEventListener('click', () => setLevel('state'));
+
+			const colorSelect = document.getElementById('color-select') as HTMLSelectElement;
+			colorSelect.addEventListener('change', () => {
+				colorVar = colorSelect.value;
+				renderLegend();
+				renderSelection();
+				draw();
+				syncURL();
+			});
+
+			function select(r: Region | null) {
+				selected = r;
+				renderSelection();
+				drawHover();
+				syncURL();
+			}
+
+			function renderSelection() {
+				const el = document.getElementById('selection')!;
+				el.hidden = !selected;
+				if (!selected) return;
+				const where = level === 'mun' ? `, ${names[selected.state].name}` : '';
+				const v = vars.get(colorVar);
+				const rate = v ? ` · ${v.label}: ${format(v, valueOf(selected, v.id))} (Mexico ${format(v, v.national)})` : '';
+				el.innerHTML = `<strong>${selected.name}</strong>${where} · ${selected.population.toLocaleString('en-US')} people${rate}`;
+			}
+
+			// Shareable state: ?view=normal&level=state&color=hli&m=20067
+			function syncURL() {
+				const p = new URLSearchParams();
+				if (view === 'normal') p.set('view', 'normal');
+				if (level === 'state') p.set('level', 'state');
+				if (colorVar !== 'population') p.set('color', colorVar);
+				if (selected) p.set('m', selected.id);
+				const query = p.toString();
+				history.replaceState(null, '', query ? `?${query}` : location.pathname);
+			}
+
+			function applyURL() {
+				const p = new URLSearchParams(location.search);
+				if (p.get('view') === 'normal') setView('normal');
+				if (p.get('level') === 'state') setLevel('state');
+				const c = p.get('color');
+				if (c && (c === 'state' || vars.has(c))) {
+					colorVar = c;
+					colorSelect.value = c;
+				}
+				const m = p.get('m');
+				selected = (level === 'mun' ? municipios : states).find((r) => r.id === m) ?? null;
+				syncURL();
+			}
+
+			// Find your municipio: accent- and case-insensitive.
+			const fold = (text: string) => text.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase();
+			const searchInput = document.getElementById('search') as HTMLInputElement;
+			const results = document.getElementById('search-results') as HTMLUListElement;
+			let matches: Region[] = [];
+			let active = 0;
+
+			function showResults() {
+				results.replaceChildren(...matches.map((r, i) => {
+					const li = document.createElement('li');
+					li.setAttribute('role', 'option');
+					li.className = i === active ? 'active' : '';
+					li.append(r.name, Object.assign(document.createElement('span'), { className: 'state', textContent: `, ${names[r.state].name}` }));
+					li.addEventListener('mousedown', (e) => {
+						e.preventDefault();
+						choose(r);
+					});
+					return li;
+				}));
+				results.hidden = matches.length === 0;
+			}
+
+			function choose(r: Region) {
+				setLevel('mun');
+				select(r);
+				searchInput.value = `${r.name}, ${names[r.state].name}`;
+				matches = [];
+				showResults();
+			}
+
+			searchInput.addEventListener('input', () => {
+				const q = fold(searchInput.value.trim());
+				active = 0;
+				matches = q.length < 2 ? [] : municipios
+					.map((r) => ({ r, key: fold(`${r.name} ${names[r.state].name}`), name: fold(r.name) }))
+					.filter((x) => x.key.includes(q))
+					.sort((a, b) => Number(b.name.startsWith(q)) - Number(a.name.startsWith(q)) || b.r.population - a.r.population)
+					.slice(0, 8)
+					.map((x) => x.r);
+				showResults();
+			});
+			searchInput.addEventListener('keydown', (e) => {
+				if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+					e.preventDefault();
+					active = (active + (e.key === 'ArrowDown' ? 1 : -1) + matches.length) % Math.max(1, matches.length);
+					showResults();
+				} else if (e.key === 'Enter' && matches[active]) {
+					choose(matches[active]);
+				} else if (e.key === 'Escape') {
+					matches = [];
+					showResults();
+				}
+			});
+			searchInput.addEventListener('blur', () => {
+				matches = [];
+				showResults();
+			});
+
+			const copyButton = document.getElementById('copy-link') as HTMLButtonElement;
+			copyButton.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(location.href);
+					copyButton.textContent = 'Copied!';
+				} catch {
+					window.prompt('Copy this link', location.href);
+				}
+				setTimeout(() => (copyButton.textContent = 'Copy link'), 1500);
 			});
 
 			load();
