@@ -4,6 +4,7 @@ import BaseHead from '../components/BaseHead.astro';
 import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
+import variables from '../assets/cartogram/variables.json';
 
 const posts = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
@@ -154,7 +155,7 @@ const posts = (await getCollection('blog'))
 						An interactive map of Mexico where territory is distorted by population.
 						All <span class="card-highlight">2,469 municipios</span> sized by INEGI Census 2020
 						data with the Gastner-Seguy-More flow-based algorithm. Watch the real map morph
-						into the cartogram, color it by ten census measures, find your own municipio, and
+						into the cartogram, color it by {variables.variables.length} census measures, find your own municipio, and
 						explore how standard maps hide where people actually live.
 						The central bulge of CDMX, Estado de Mexico, Puebla, and Guadalajara reveals
 						a country shaped nothing like its borders suggest.
