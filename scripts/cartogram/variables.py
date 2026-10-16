@@ -18,6 +18,10 @@ OUT = Path(os.environ.get('OUT_DIR', ROOT / 'src/assets/cartogram'))
 
 # id, group, label, description, numerator, denominator (None = INEGI's own average), unit
 CATALOG = [
+    ('formal', 'Market', 'Covered by IMSS', 'Share of people affiliated with IMSS, the social security institute that mainly covers formal private-sector workers and their families (a proxy for the formal economy)', 'PDER_IMSS', 'POBTOT', '%'),
+    ('car', 'Market', 'Homes with a car', 'Share of occupied homes with a car or pickup truck', 'VPH_AUTOM', 'VIVPARH_CV', '%'),
+    ('computer', 'Market', 'Homes with a computer', 'Share of occupied homes with a computer, laptop, or tablet', 'VPH_PC', 'VIVPARH_CV', '%'),
+    ('highschool', 'Market', 'Adults with high school or more', 'Share of people aged 18+ whose schooling reaches at least some high school, teacher training, technical school, or beyond', 'P18YM_PB', 'P_18YMAS', '%'),
     ('hli', 'Identity', 'Indigenous-language speakers', 'Share of people aged 3+ who speak an Indigenous language', 'P3YM_HLI', 'P_3YMAS', '%'),
     ('afro', 'Identity', 'Afro-Mexican', 'Share of people who consider themselves Afro-Mexican or Afro-descendant', 'POB_AFRO', 'POBTOT', '%'),
     ('age65', 'Age and health', 'Aged 65 and over', 'Share of people aged 65 or older', 'POB65_MAS', 'POBTOT', '%'),
