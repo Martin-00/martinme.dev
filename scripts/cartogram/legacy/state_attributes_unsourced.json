@@ -1,0 +1,165 @@
+{
+  "_note": "HDI and 2024 winning party per state, carried over from the v2 map. Original sources were not recorded, so this is not shown on the site until properly sourced.",
+  "states": {
+    "01": {
+      "name": "Aguascalientes",
+      "party_2024": "PAN",
+      "hdi": 0.804
+    },
+    "02": {
+      "name": "Baja California",
+      "party_2024": "MORENA",
+      "hdi": 0.796
+    },
+    "03": {
+      "name": "Baja California Sur",
+      "party_2024": "MORENA",
+      "hdi": 0.818
+    },
+    "04": {
+      "name": "Campeche",
+      "party_2024": "MORENA",
+      "hdi": 0.759
+    },
+    "05": {
+      "name": "Coahuila",
+      "party_2024": "PAN",
+      "hdi": 0.806
+    },
+    "06": {
+      "name": "Colima",
+      "party_2024": "MORENA",
+      "hdi": 0.795
+    },
+    "07": {
+      "name": "Chiapas",
+      "party_2024": "MORENA",
+      "hdi": 0.667
+    },
+    "08": {
+      "name": "Chihuahua",
+      "party_2024": "MORENA",
+      "hdi": 0.774
+    },
+    "09": {
+      "name": "Ciudad de México",
+      "party_2024": "MORENA",
+      "hdi": 0.863
+    },
+    "10": {
+      "name": "Durango",
+      "party_2024": "MORENA",
+      "hdi": 0.768
+    },
+    "11": {
+      "name": "Guanajuato",
+      "party_2024": "PAN",
+      "hdi": 0.753
+    },
+    "12": {
+      "name": "Guerrero",
+      "party_2024": "MORENA",
+      "hdi": 0.69
+    },
+    "13": {
+      "name": "Hidalgo",
+      "party_2024": "MORENA",
+      "hdi": 0.734
+    },
+    "14": {
+      "name": "Jalisco",
+      "party_2024": "MC",
+      "hdi": 0.797
+    },
+    "15": {
+      "name": "México",
+      "party_2024": "MORENA",
+      "hdi": 0.767
+    },
+    "16": {
+      "name": "Michoacán",
+      "party_2024": "MORENA",
+      "hdi": 0.72
+    },
+    "17": {
+      "name": "Morelos",
+      "party_2024": "MORENA",
+      "hdi": 0.768
+    },
+    "18": {
+      "name": "Nayarit",
+      "party_2024": "MORENA",
+      "hdi": 0.757
+    },
+    "19": {
+      "name": "Nuevo León",
+      "party_2024": "MORENA",
+      "hdi": 0.85
+    },
+    "20": {
+      "name": "Oaxaca",
+      "party_2024": "MORENA",
+      "hdi": 0.681
+    },
+    "21": {
+      "name": "Puebla",
+      "party_2024": "MORENA",
+      "hdi": 0.733
+    },
+    "22": {
+      "name": "Querétaro",
+      "party_2024": "PAN",
+      "hdi": 0.814
+    },
+    "23": {
+      "name": "Quintana Roo",
+      "party_2024": "MORENA",
+      "hdi": 0.795
+    },
+    "24": {
+      "name": "San Luis Potosí",
+      "party_2024": "MORENA",
+      "hdi": 0.752
+    },
+    "25": {
+      "name": "Sinaloa",
+      "party_2024": "MORENA",
+      "hdi": 0.775
+    },
+    "26": {
+      "name": "Sonora",
+      "party_2024": "MORENA",
+      "hdi": 0.797
+    },
+    "27": {
+      "name": "Tabasco",
+      "party_2024": "MORENA",
+      "hdi": 0.738
+    },
+    "28": {
+      "name": "Tamaulipas",
+      "party_2024": "MORENA",
+      "hdi": 0.785
+    },
+    "29": {
+      "name": "Tlaxcala",
+      "party_2024": "MORENA",
+      "hdi": 0.739
+    },
+    "30": {
+      "name": "Veracruz",
+      "party_2024": "MORENA",
+      "hdi": 0.718
+    },
+    "31": {
+      "name": "Yucatán",
+      "party_2024": "PAN",
+      "hdi": 0.774
+    },
+    "32": {
+      "name": "Zacatecas",
+      "party_2024": "MORENA",
+      "hdi": 0.746
+    }
+  }
+}

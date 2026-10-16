@@ -34,15 +34,22 @@ DENSIFY_MAX_SEGMENT_M = int(os.environ.get('DENSIFY_MAX_SEGMENT_M', 2000))
 ENGINE_ARGS = os.environ.get('ENGINE_ARGS', '-N 8192').split()
 QUANTIZATION = 100_000  # ~30 m per step: far below a pixel even zoomed in 20x
 CENSUS_TOTAL = 126_014_024  # INEGI, Censo de Poblacion y Vivienda 2020
+SIZE_VAR = os.environ.get('SIZE_VAR', 'POBTOT')  # the census count that sizes the map
+MIN_TARGET_FRAC = 1e-7  # matches the engine patch: zero counts get this share of the total
 
 
-def census_population():
+def census(column):
     path = glob.glob(str(DATA / 'iter/**/conjunto_de_datos_iter_00CSV20.csv'), recursive=True)[0]
-    population = {}
+    values = {}
     with open(path, encoding='utf-8-sig') as f:
         for row in csv.DictReader(f):
             if row['LOC'] == '0000' and row['MUN'] != '000' and row['ENTIDAD'] != '00':
-                population[row['ENTIDAD'] + row['MUN']] = int(row['POBTOT'])
+                values[row['ENTIDAD'] + row['MUN']] = int(row[column])
+    return values
+
+
+def census_population():
+    population = census('POBTOT')
     assert sum(population.values()) == CENSUS_TOTAL, 'census total mismatch'
     return population
 
@@ -84,24 +91,24 @@ def polygons(arcs, geometry):
     return [[ring_coords(arcs, r) for r in poly] for poly in rings]
 
 
-def run_engine(topology, population):
+def run_engine(topology, sizes):
     """Feed the engine the exact topology vertices; return {input vertex: cartogram vertex}."""
     features = []
     for g in topology['objects']['00mun']['geometries']:
         features.append({'type': 'Feature', 'properties': {'CVEGEO': g['properties']['CVEGEO']},
                          'geometry': {'type': 'MultiPolygon', 'coordinates': polygons(topology['arcs'], g)}})
     # Keep every run's input, output, and log: a run takes minutes, and REUSE_ENGINE=1 skips it.
-    run_dir = WORK / f'engine_{SIMPLIFY_INTERVAL_M}m_{DENSIFY_MAX_SEGMENT_M}m'
+    run_dir = WORK / f'engine_{SIZE_VAR}_{SIMPLIFY_INTERVAL_M}m_{DENSIFY_MAX_SEGMENT_M}m'
     run_dir.mkdir(exist_ok=True)
     out_file = run_dir / 'pop_cartogram.geojson'
     if not (os.environ.get('REUSE_ENGINE') and out_file.exists()):
         (run_dir / 'in.geojson').write_text(json.dumps({'type': 'FeatureCollection', 'features': features}))
         with open(run_dir / 'pop.csv', 'w', newline='') as f:
             w = csv.writer(f)
-            w.writerow(['CVEGEO', 'POBTOT'])
-            w.writerows(sorted(population.items()))
+            w.writerow(['CVEGEO', 'VALUE'])
+            w.writerows(sorted(sizes.items()))
         log = subprocess.run([str(ENGINE), 'in.geojson', 'pop.csv', '--skip_projection', '-S',
-                              '--id', 'CVEGEO', '--area', 'POBTOT', *ENGINE_ARGS],
+                              '--id', 'CVEGEO', '--area', 'VALUE', *ENGINE_ARGS],
                              cwd=run_dir, capture_output=True, text=True)
         (run_dir / 'engine.log').write_text(log.stdout + log.stderr)
     result = json.loads(out_file.read_text())
@@ -138,12 +145,12 @@ def decode(arcs, transform):
     return [(np.cumsum(np.array(a), axis=0) * [sx, sy] + [tx, ty]).tolist() for a in arcs]
 
 
-def metrics(topology, arcs, population):
+def metrics(topology, arcs, sizes):
     geoms, pops, crossing_area = [], [], 0.0
     for g in topology['objects']['municipios']['geometries']:
         coords = polygons(arcs, g)
         geoms.append(shape({'type': 'MultiPolygon', 'coordinates': coords}))
-        pops.append(population[g['properties']['id']])
+        pops.append(sizes[g['properties']['id']])
         for ring in (r for p in coords for r in p if len(r) >= 4):
             poly = Polygon(ring)
             if not poly.is_valid:
@@ -151,6 +158,8 @@ def metrics(topology, arcs, population):
                 # the repaired shape counts it positively. Half the gap is the loops' area.
                 crossing_area += (shapely.make_valid(poly).area - abs(shapely.area(poly))) / 2
     pops = np.array(pops, float)
+    zero_targets = int((pops == 0).sum())
+    pops = np.maximum(pops, pops.sum() * MIN_TARGET_FRAC)  # same floor the engine applies
     invalid = int(sum(not g.is_valid for g in geoms))
     geoms = [shapely.make_valid(g) for g in geoms]  # measure repaired shapes; report the raw count above
     areas = np.array([g.area for g in geoms])
@@ -161,11 +170,12 @@ def metrics(topology, arcs, population):
                   for i in range(len(geoms)) for j in tree.query(geoms[i]) if j > i)
     return {
         'municipios': len(geoms),
-        'population': int(pops.sum()),
+        'size_total': int(round(pops.sum())),
+        'zero_targets': zero_targets,
         'area_error_median_pct': round(float(np.median(rel)) * 100, 2),
         'area_error_p90_pct': round(float(np.percentile(rel, 90)) * 100, 2),
         'area_error_max_pct': round(float(rel.max()) * 100, 2),
-        'area_error_pop_weighted_pct': round(float((rel * pops / pops.sum()).sum()) * 100, 3),
+        'area_error_weighted_pct': round(float((rel * pops / pops.sum()).sum()) * 100, 3),
         'invalid_polygons': invalid,
         'self_crossing_pct_of_area': round(crossing_area / areas.sum() * 100, 4),
         'overlap_pct_of_area': round(overlap / areas.sum() * 100, 4),
@@ -176,9 +186,10 @@ def main():
     WORK.mkdir(parents=True, exist_ok=True)
     OUT.mkdir(parents=True, exist_ok=True)
     population = census_population()
+    sizes = population if SIZE_VAR == 'POBTOT' else census(SIZE_VAR)
     topology = build_topology()
     topology['arcs'] = [densify(a, DENSIFY_MAX_SEGMENT_M) for a in topology['arcs']]
-    moved = run_engine(topology, population)
+    moved = run_engine(topology, sizes)
     cartogram_arcs = [[moved[(x, y)] for x, y in a] for a in topology['arcs']]
 
     normal_q, normal_t = quantize(topology['arcs'])
@@ -193,16 +204,21 @@ def main():
               'cartogram': {'transform': carto_t, 'arcs': carto_q},
               'objects': {'municipios': {'type': 'GeometryCollection', 'geometries': geometries}}}
 
-    checks = {'normal': metrics(result, decode(normal_q, normal_t), population),
-              'cartogram': metrics(result, decode(carto_q, carto_t), population),
-              'settings': {'simplify_interval_m': SIMPLIFY_INTERVAL_M,
+    checks = {'normal': metrics(result, decode(normal_q, normal_t), sizes),
+              'cartogram': metrics(result, decode(carto_q, carto_t), sizes),
+              'settings': {'size_var': SIZE_VAR,
+                           'simplify_interval_m': SIMPLIFY_INTERVAL_M,
                            'densify_max_segment_m': DENSIFY_MAX_SEGMENT_M,
                            'engine_args': ENGINE_ARGS,
                            'points': sum(len(a) for a in normal_q)}}
-    c = checks['cartogram']
-    assert c['population'] == CENSUS_TOTAL and c['municipios'] == 2469
-    (OUT / 'mexico.topo.json').write_text(json.dumps(result, separators=(',', ':')))
-    (OUT / 'metrics.json').write_text(json.dumps(checks, indent=2) + '\n')
+    assert sum(population.values()) == CENSUS_TOTAL and checks['cartogram']['municipios'] == 2469
+    checks['cartogram']['population'] = CENSUS_TOTAL
+    if SIZE_VAR == 'POBTOT':
+        (OUT / 'mexico.topo.json').write_text(json.dumps(result, separators=(',', ':')))
+        (OUT / 'metrics.json').write_text(json.dumps(checks, indent=2) + '\n')
+    else:  # other counts share the population topology; ship only their cartogram coordinates
+        (OUT / f'cartogram-{SIZE_VAR}.json').write_text(json.dumps(result['cartogram'], separators=(',', ':')))
+        (OUT / f'metrics-{SIZE_VAR}.json').write_text(json.dumps(checks, indent=2) + '\n')
     print(json.dumps(checks, indent=2))
 
 
