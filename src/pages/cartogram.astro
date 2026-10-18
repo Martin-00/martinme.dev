@@ -97,6 +97,21 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 				.control-separator {
 					display: none;
 				}
+				.controls {
+					gap: 0.4em;
+				}
+				.controls button {
+					padding: 0.35em 0.7em;
+				}
+				.color-picker {
+					flex-basis: 100%;
+				}
+				.color-picker select {
+					width: 100%;
+				}
+				.search {
+					max-width: none;
+				}
 			}
 			.color-picker select,
 			.copy-link,
@@ -208,6 +223,39 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 			.map canvas {
 				display: block;
 				width: 100%;
+			}
+			.map #map-base {
+				touch-action: pan-x pan-y; /* one finger scrolls the page; two fingers zoom the map */
+				cursor: grab;
+			}
+			.zoom-controls {
+				position: absolute;
+				top: 8px;
+				right: 8px;
+				display: flex;
+				flex-direction: column;
+				gap: 4px;
+				z-index: 2;
+			}
+			.zoom-controls button {
+				width: 30px;
+				height: 30px;
+				background: rgba(5, 10, 25, 0.85);
+				border: 1px solid rgba(255, 255, 255, 0.2);
+				color: rgba(255, 255, 255, 0.85);
+				font-size: 16px;
+				line-height: 1;
+				cursor: pointer;
+			}
+			.zoom-controls button:hover {
+				color: var(--accent);
+				border-color: var(--accent);
+			}
+			.map-hint {
+				text-align: center;
+				font-size: 0.7em;
+				color: rgba(255, 255, 255, 0.4);
+				margin: 0.4em 0 0;
 			}
 			.map canvas + canvas {
 				position: absolute;
@@ -341,7 +389,13 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 					<div class="loading" id="loading">Loading map data...</div>
 					<canvas id="map-base" role="img" aria-label="Cartogram of Mexico's 2,469 municipios, each sized by its 2020 population"></canvas>
 					<canvas id="map-overlay" aria-hidden="true"></canvas>
+					<div class="zoom-controls">
+						<button id="zoom-in" type="button" aria-label="Zoom in">+</button>
+						<button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+						<button id="zoom-reset" type="button" aria-label="Reset zoom">⟲</button>
+					</div>
 				</div>
+				<p class="map-hint">Zoom with two fingers, or ⌘/Ctrl + scroll; drag to explore; tap a place to select it.</p>
 				<div id="legend" class="legend"></div>
 				<p id="selection" class="selection" aria-live="polite" hidden></p>
 				<div class="tooltip" id="tooltip"></div>
@@ -481,6 +535,7 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 			let hovered: Region | null = null;
 			let selected: Region | null = null;
 			let view: 'cartogram' | 'normal' = 'cartogram';
+			let zoomT = d3.zoomIdentity;
 			let municipios: Region[] = [];
 			let states: Region[] = [];
 			let meshes: Record<'mun' | 'state' | 'outline', Mesh>;
@@ -556,12 +611,13 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 				}
 				renderLegend();
 				renderSelection();
+				if (selected) setTimeout(() => zoomTo(selected!), reducedMotion || view === 'normal' ? 0 : 1800);
 			}
 
 			// Fit both maps to the canvas and convert every vertex to screen space once.
 			function layout() {
 				width = container.clientWidth;
-				height = Math.round(width * ASPECT);
+				height = Math.round(width * (width < 600 ? 0.85 : ASPECT));
 				const dpr = window.devicePixelRatio || 1;
 				for (const c of [base, overlay]) {
 					c.width = Math.round(width * dpr);
@@ -605,6 +661,9 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 				for (const m of Object.values(meshes)) {
 					m.screen = m.lines.a.map((line, i) => ({ a: project(pa, line), b: project(pb, m.lines.b[i]) }));
 				}
+				zoom.extent([[0, 0], [width, height]]).translateExtent([[0, 0], [width, height]]);
+				zoomT = d3.zoomIdentity;
+				d3.select(base).property('__zoom', zoomT);
 				draw();
 			}
 
@@ -639,9 +698,18 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 				ctx.stroke();
 			}
 
-			function draw() {
-				const ctx = base.getContext('2d')!;
+			// The zoom transform maps layout pixels to screen pixels; strokes divide by k to stay thin.
+			function prepare(canvas: HTMLCanvasElement) {
+				const ctx = canvas.getContext('2d')!;
+				const dpr = window.devicePixelRatio || 1;
+				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 				ctx.clearRect(0, 0, width, height);
+				ctx.setTransform(dpr * zoomT.k, 0, 0, dpr * zoomT.k, dpr * zoomT.x, dpr * zoomT.y);
+				return ctx;
+			}
+
+			function draw() {
+				const ctx = prepare(base);
 				ctx.lineJoin = 'round';
 				for (const r of level === 'mun' ? municipios : states) {
 					ctx.beginPath();
@@ -649,15 +717,15 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 					ctx.fillStyle = color(r);
 					ctx.fill('evenodd');
 				}
-				if (level === 'mun') strokeMesh(ctx, meshes.mun, 'rgba(0, 0, 0, 0.28)', 0.35);
-				strokeMesh(ctx, meshes.state, 'rgba(255, 255, 255, 0.45)', level === 'mun' ? 0.7 : 0.9);
-				strokeMesh(ctx, meshes.outline, 'rgba(255, 255, 255, 0.6)', 0.9);
+				const k = zoomT.k;
+				if (level === 'mun') strokeMesh(ctx, meshes.mun, 'rgba(0, 0, 0, 0.28)', 0.35 / Math.sqrt(k));
+				strokeMesh(ctx, meshes.state, 'rgba(255, 255, 255, 0.45)', (level === 'mun' ? 0.7 : 0.9) / k);
+				strokeMesh(ctx, meshes.outline, 'rgba(255, 255, 255, 0.6)', 0.9 / k);
 				drawHover();
 			}
 
 			function drawHover() {
-				const ctx = overlay.getContext('2d')!;
-				ctx.clearRect(0, 0, width, height);
+				const ctx = prepare(overlay);
 				for (const [r, fill, lineWidth] of [[selected, 'rgba(251, 191, 36, 0.18)', 2.5], [hovered, 'rgba(255, 255, 255, 0.12)', 1.5]] as const) {
 					if (!r) continue;
 					ctx.beginPath();
@@ -665,7 +733,7 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 					ctx.fillStyle = fill;
 					ctx.fill('evenodd');
 					ctx.strokeStyle = '#fbbf24';
-					ctx.lineWidth = lineWidth;
+					ctx.lineWidth = lineWidth / zoomT.k;
 					ctx.stroke();
 				}
 			}
@@ -700,7 +768,8 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 				return hit;
 			}
 
-			function regionAt(x: number, y: number): Region | null {
+			function regionAt(sx: number, sy: number): Region | null {
+				const [x, y] = zoomT.invert([sx, sy]);
 				const useB = t === 1;
 				for (const r of level === 'mun' ? municipios : states) {
 					const [x0, y0, x1, y1] = useB ? r.boxB : r.boxA;
@@ -717,7 +786,7 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 			}
 
 			function onPointer(event: PointerEvent) {
-				if (timer || !municipios.length) return;
+				if (timer || !municipios.length || event.pointerType === 'touch') return;
 				const rect = base.getBoundingClientRect();
 				const found = regionAt(event.clientX - rect.left, event.clientY - rect.top);
 				if (found !== hovered) {
@@ -737,8 +806,38 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 						<div class="tt-value">${found.population.toLocaleString('en-US')} people · ${share}% of Mexico</div>${rate}`);
 			}
 
+			const zoom = d3.zoom<HTMLCanvasElement, unknown>()
+				.scaleExtent([1, 40])
+				// Trackpad pinches send tiny ctrl-wheel deltas and need a boost; a mouse wheel notch (~100) does not.
+				.wheelDelta((event: WheelEvent) =>
+					-event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002) * (event.ctrlKey && Math.abs(event.deltaY) < 50 ? 10 : 1))
+				// Don't hijack page scrolling: wheel zoom needs ⌘/Ctrl (trackpad pinch sends ctrlKey), touch needs two fingers.
+				.filter((event: any) => {
+					if (event.type === 'wheel') return event.ctrlKey || event.metaKey;
+					if (event.type === 'touchstart') return event.touches.length >= 2;
+					return !event.button;
+				})
+				.on('zoom', (event) => {
+					zoomT = event.transform;
+					hovered = null;
+					hideTooltip();
+					draw();
+				});
+			d3.select(base).call(zoom);
+			const zoomBy = (factor: number) => d3.select(base).transition().duration(250).call(zoom.scaleBy, factor);
+			document.getElementById('zoom-in')!.addEventListener('click', () => zoomBy(1.8));
+			document.getElementById('zoom-out')!.addEventListener('click', () => zoomBy(1 / 1.8));
+			document.getElementById('zoom-reset')!.addEventListener('click', () =>
+				d3.select(base).transition().duration(400).call(zoom.transform, d3.zoomIdentity));
+
+			function zoomTo(r: Region) {
+				const [x0, y0, x1, y1] = view === 'cartogram' ? r.boxB : r.boxA;
+				const k = Math.max(1, Math.min(12, 0.6 / Math.max((x1 - x0) / width, (y1 - y0) / height)));
+				const target = d3.zoomIdentity.translate(width / 2 - (k * (x0 + x1)) / 2, height / 2 - (k * (y0 + y1)) / 2).scale(k);
+				d3.select(base).transition().duration(750).call(zoom.transform, target);
+			}
+
 			base.addEventListener('pointermove', onPointer);
-			base.addEventListener('pointerdown', onPointer);
 			base.addEventListener('click', (event) => {
 				if (timer || !municipios.length) return;
 				const rect = base.getBoundingClientRect();
@@ -887,6 +986,7 @@ const groups = [...new Set(variables.variables.map((v) => v.group))];
 			function choose(r: Region) {
 				setLevel('mun');
 				select(r);
+				zoomTo(r);
 				searchInput.value = `${r.name}, ${names[r.state].name}`;
 				matches = [];
 				showResults();
