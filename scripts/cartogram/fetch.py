@@ -30,8 +30,9 @@ class RemoteWindow(io.RawIOBase):
     def __init__(self, url, base=0, size=None):
         self.url, self.base, self.pos = url, base, 0
         if size is None:
-            head = urllib.request.urlopen(urllib.request.Request(url, method='HEAD'))
-            size = int(head.headers['Content-Length'])
+            # A 1-byte range request reports the total size; INEGI doesn't always send it on HEAD.
+            first = urllib.request.urlopen(urllib.request.Request(url, headers={'Range': 'bytes=0-0'}))
+            size = int(first.headers['Content-Range'].split('/')[-1])
         self.size = size
 
     def readable(self):
