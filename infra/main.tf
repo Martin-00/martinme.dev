@@ -212,3 +212,43 @@ resource "aws_route53_record" "www" {
     evaluate_target_health = false
   }
 }
+
+# =============================================================================
+# Email — Porkbun (the registrar) forwards hola@martinme.dev to a separate project inbox.
+# The forward itself is set in Porkbun's dashboard; DNS only points mail there.
+# allow_overwrite adopts records added by hand in the console.
+# =============================================================================
+
+resource "aws_route53_record" "mx" {
+  zone_id         = aws_route53_zone.main.zone_id
+  name            = var.domain_name
+  type            = "MX"
+  ttl             = 3600
+  allow_overwrite = true
+  records         = ["10 fwd1.porkbun.com", "20 fwd2.porkbun.com"]
+}
+
+# Route 53 holds one TXT set per name, so every apex TXT value lives here: SPF for the
+# forwarding, and the Google Search Console verification that was first added by hand.
+resource "aws_route53_record" "apex_txt" {
+  zone_id         = aws_route53_zone.main.zone_id
+  name            = var.domain_name
+  type            = "TXT"
+  ttl             = 3600
+  allow_overwrite = true
+  records = [
+    "v=spf1 include:_spf.porkbun.com ~all",
+    "google-site-verification=SNj7oNqCcnMI1w7XR9u2R6HDEbC__EciCdUdp8MWj9g",
+  ]
+}
+
+# DMARC: receivers reject mail that claims to come from martinme.dev but doesn't. Nothing sends
+# as martinme.dev today (replies go out from a separate project inbox), so reject is safe.
+# Sending as hola@ later needs DKIM-signed mail from a real provider, or this will block it.
+resource "aws_route53_record" "dmarc" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = "_dmarc.${var.domain_name}"
+  type    = "TXT"
+  ttl     = 3600
+  records = ["v=DMARC1; p=reject; adkim=s; aspf=s"]
+}
