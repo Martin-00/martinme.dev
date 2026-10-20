@@ -1,0 +1,91 @@
+{
+  "settings": {
+    "simplify_m": 10,
+    "densify_m": 150,
+    "engine_args": [
+      "-N",
+      "8192"
+    ],
+    "floor_frac": 2e-05,
+    "quantization": 100000
+  },
+  "gates": {
+    "median_pct": 2,
+    "p90_pct": 5,
+    "weighted_pct": 3,
+    "overlap_pct": 0.5,
+    "self_crossing_pct": 0.1,
+    "floor_extra_map_share_pct": 1
+  },
+  "shapes": {
+    "people": {
+      "median_pct": 0.05,
+      "p90_pct": 0.16,
+      "weighted_pct": 0.09,
+      "max_pct": 991.8,
+      "worst_tract": "1904800011469",
+      "worst_tract_area_share_pct": 0.0218,
+      "overlap_pct": 0.063,
+      "self_crossing_pct": 0.0216,
+      "invalid_polygons": 118,
+      "column": "POBTOT",
+      "total": 5263609,
+      "unknown_tracts": 0,
+      "floor_value": 105.3,
+      "tracts_floored": 174,
+      "floor_extra_map_share_pct": 0.27,
+      "converged": true,
+      "passes_gates": true
+    },
+    "empty": {
+      "median_pct": 0.06,
+      "p90_pct": 0.18,
+      "weighted_pct": 0.12,
+      "max_pct": 264.8,
+      "worst_tract": "1904504050350",
+      "worst_tract_area_share_pct": 0.0073,
+      "overlap_pct": 0.077,
+      "self_crossing_pct": 0.028,
+      "invalid_polygons": 139,
+      "column": "VIVPAR_DES",
+      "total": 237948,
+      "unknown_tracts": 57,
+      "floor_value": 4.8,
+      "tracts_floored": 150,
+      "floor_extra_map_share_pct": 0.27,
+      "converged": true,
+      "passes_gates": true
+    }
+  },
+  "insights": {
+    "tracts": 2185,
+    "people": 5263609,
+    "half_people_land_pct": 19.2,
+    "empty_homes": 237948,
+    "empty_top": [
+      {
+        "municipio": "Juárez",
+        "empty_share_pct": 14.9,
+        "people_share_pct": 8.7
+      },
+      {
+        "municipio": "Monterrey",
+        "empty_share_pct": 14.4,
+        "people_share_pct": 21.7
+      },
+      {
+        "municipio": "García",
+        "empty_share_pct": 14.3,
+        "people_share_pct": 7.4
+      },
+      {
+        "municipio": "Apodaca",
+        "empty_share_pct": 10.5,
+        "people_share_pct": 12.3
+      }
+    ],
+    "tracts_over_30pct_empty": 190,
+    "empty_suppressed": 59,
+    "tracts_without_homes": 64
+  }
+}
