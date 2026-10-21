@@ -7,7 +7,7 @@ updatedDate: 'Oct 15 2026'
 
 I built my personal website on AWS from scratch. Not on Vercel, not on Netlify, not on Cloudflare Pages. On S3, CloudFront, ACM, Route 53, Terraform, and GitHub Actions with OIDC authentication. The whole thing costs $0.51/month.
 
-This post explains the architecture, the decisions behind each component, the problems I ran into, and how I solved them. If you're thinking about building your own, everything here is replicable. The [source code is on GitHub](https://github.com/Martin-00/martinme.dev).
+This post explains the architecture, the decisions behind each component, the problems I ran into, and how I solved them. If you're thinking about building your own, everything here is replicable. The [source code is on GitHub](https://github.com/martinme-dev/martinme.dev).
 
 ## What you'll end up with
 
@@ -285,4 +285,4 @@ The brief was: *serious, catching and interesting, elegant and pretty, while kee
 - **Dark glass over deep space.** The background is a crop of the [Hubble Legacy Field](https://esahubble.org/images/heic1909a/), a composite of roughly 265,000 galaxies (CC BY 4.0, credited in the footer). Text sits on a darker panel so the universe never fights the words.
 - **Derived, never hand-typed.** Post lists, counts, and "latest" labels are computed from the content at build time, so they can't go stale.
 
-If you want to see the full implementation, including all Terraform files and the GitHub Actions workflow, the source code is at [github.com/Martin-00/martinme.dev](https://github.com/Martin-00/martinme.dev). If you build your own, I'd love to hear about it.
+If you want to see the full implementation, including all Terraform files and the GitHub Actions workflow, the source code is at [github.com/martinme-dev/martinme.dev](https://github.com/martinme-dev/martinme.dev). If you build your own, I'd love to hear about it.

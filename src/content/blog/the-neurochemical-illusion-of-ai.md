@@ -58,7 +58,7 @@ else, that I can do in the next 15 minutes. Don't accept
 "later." Help me shrink it until I can do it now.
 ```
 
-This post's receipt is the commit that put it back [in the repository](https://github.com/Martin-00/martinme.dev/blob/main/src/content/blog/the-neurochemical-illusion-of-ai.md). I rewrote it with Claude, which feels fitting: the thinking was shared, the push was mine.
+This post's receipt is the commit that put it back [in the repository](https://github.com/martinme-dev/martinme.dev/blob/main/src/content/blog/the-neurochemical-illusion-of-ai.md). I rewrote it with Claude, which feels fitting: the thinking was shared, the push was mine.
 
 What's your receipt today? Tell me on [LinkedIn](https://www.linkedin.com/in/martinmoralesestrada/).
 
