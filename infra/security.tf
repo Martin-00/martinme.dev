@@ -17,7 +17,8 @@ resource "aws_iam_openid_connect_provider" "github" {
   }
 }
 
-# Only workflow runs on main in this repo can assume the role
+# Only workflow runs on main in this repo can assume the role. The subject is GitHub's
+# immutable form, pinned to the owner and repo IDs, so a rename can't break or spoof it.
 resource "aws_iam_role" "deploy" {
   name = "github-actions-martinme-deploy"
 
@@ -31,7 +32,7 @@ resource "aws_iam_role" "deploy" {
         Condition = {
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-            "token.actions.githubusercontent.com:sub" = "repo:Martin-00/martinme.dev:ref:refs/heads/main"
+            "token.actions.githubusercontent.com:sub" = "repo:martinme-dev@43385005/martinme.dev@1168199808:ref:refs/heads/main"
           }
         }
       }
