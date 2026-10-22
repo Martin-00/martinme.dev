@@ -18,10 +18,14 @@ export async function GET(context) {
 			.map((post) => `- [${post.data.title}](${url(`writings/${post.id}/`)}): ${post.data.description}`)
 			.join('\n'),
 		'## Projects',
-		`- [Mexico population cartogram](${url('cartogram/')}): Interactive map of Mexico's municipios, sized by 2020 census population and colored by census rates.`,
+		[
+			`- [Mexico population cartogram](${url('cartogram/')}): Interactive map of Mexico's municipios, sized by 2020 census population and colored by census rates.`,
+			`- [Monterrey cartogram](${url('monterrey/')}): Metro Monterrey's urban census tracts, morphing from the land into its people and its empty homes (INEGI 2020 census). In Spanish: ${url('monterrey/es/')}`,
+		].join('\n'),
 		'## Optional',
 		[
 			`- [About](${url('about/')}): Data Engineer, builder, and relentless learner. Based in Monterrey, Mexico.`,
+			`- [Visits](${url('visits/')}): when and where people read this site, counted without cookies, trackers, or IP addresses.`,
 			`- [Projects](${url('projects/')}): Interactive data visualizations, technical writing, and tools built with care.`,
 			`- [Sitemap](${url('sitemap-index.xml')}): every page, for search engines.`,
 			`- [RSS](${url('rss.xml')}): new writings as they are published.`,
