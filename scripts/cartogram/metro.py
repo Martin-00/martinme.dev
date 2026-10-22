@@ -63,6 +63,25 @@ CATALOG = [
 ]
 
 
+# Spanish for the /monterrey/es/ page: group, label, description per variable, and units.
+ES = {
+    'empty': ('Vivienda', 'Viviendas deshabitadas', 'Porcentaje de viviendas particulares deshabitadas'),
+    'temporary': ('Vivienda', 'Viviendas de uso temporal', 'Porcentaje de viviendas particulares de uso temporal'),
+    'crowding': ('Vivienda', 'Personas por cuarto', 'Promedio de ocupantes por cuarto en viviendas habitadas'),
+    'household': ('Vivienda', 'Personas por vivienda', 'Promedio de ocupantes por vivienda habitada'),
+    'car': ('Mercado', 'Viviendas con automóvil', 'Porcentaje de viviendas habitadas con automóvil o camioneta'),
+    'computer': ('Mercado', 'Viviendas con computadora', 'Porcentaje de viviendas habitadas con computadora, laptop o tablet'),
+    'internet': ('Mercado', 'Viviendas con internet', 'Porcentaje de viviendas habitadas con internet'),
+    'formal': ('Mercado', 'Afiliación al IMSS', 'Porcentaje de personas afiliadas al IMSS, sobre todo trabajadores formales del sector privado y sus familias'),
+    'highschool': ('Personas', 'Adultos con educación posbásica', 'Porcentaje de personas de 18 años y más con algún grado de preparatoria o más'),
+    'schooling': ('Personas', 'Años promedio de escolaridad', 'Grado promedio de escolaridad de la población de 15 años y más'),
+    'children': ('Personas', 'Menores de 15 años', 'Porcentaje de personas de 0 a 14 años'),
+    'age65': ('Personas', 'Personas de 65 años y más', 'Porcentaje de personas de 65 años o más'),
+    'uninsured': ('Personas', 'Sin afiliación a servicios de salud', 'Porcentaje de personas no afiliadas a ningún servicio de salud'),
+}
+UNITS_ES = {'%': '%', 'years': 'años', 'per room': 'por cuarto', 'per home': 'por vivienda'}
+
+
 def ensure_inputs():
     """Download the census by tract (12 MB) and read only layer 19a from INEGI's state package."""
     if not CENSUS_CSV.exists():
@@ -277,6 +296,8 @@ def main():
         lo, hi = np.percentile(known, [2, 98])
         variables['variables'].append({'id': vid, 'group': group, 'label': label, 'description': description,
                                        'unit': unit, 'numerator': numerator, 'denominator': denominator,
+                                       'group_es': ES[vid][0], 'label_es': ES[vid][1], 'description_es': ES[vid][2],
+                                       'unit_es': UNITS_ES[unit],
                                        'domain': [round(float(lo), 2), round(float(hi), 2)],
                                        'not_published': sum(v is None for v in values)})
         variables['values'][vid] = values
