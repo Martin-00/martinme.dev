@@ -5,6 +5,8 @@ import Footer from '../components/Footer.astro';
 import Header from '../components/Header.astro';
 import { SITE_TITLE } from '../consts';
 import variables from '../assets/cartogram/variables.json';
+import monterrey from '../assets/monterrey-cartogram/metrics.json';
+import monterreyVars from '../assets/monterrey-cartogram/variables.json';
 
 const posts = (await getCollection('blog'))
 	.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
@@ -166,6 +168,24 @@ const posts = (await getCollection('blog'))
 						<span class="tag">Flow-based cartogram</span>
 						<span class="tag">TopoJSON</span>
 						<span class="tag">Data Visualization</span>
+					</div>
+				</a>
+
+				<a href="/monterrey/" class="project-card featured">
+					<p class="card-label">New</p>
+					<p class="card-title">Monterrey, by its People</p>
+					<p class="card-desc">
+						Metro Monterrey's <span class="card-highlight">{monterrey.insights.tracts.toLocaleString('en-US')} urban census tracts</span>
+						morph from the land into its people, and into its empty homes. Half of its urban residents live on
+						{monterrey.insights.half_people_land_pct}% of its urban land, and in
+						{monterrey.insights.tracts_over_30pct_empty} tracts more than 30% of homes are empty. Color it by
+						{monterreyVars.variables.length} census measures across housing, market, and people.
+					</p>
+					<div class="card-tags">
+						<span class="tag">Census tracts (AGEB)</span>
+						<span class="tag">Empty homes</span>
+						<span class="tag">Flow-based cartogram</span>
+						<span class="tag">D3.js</span>
 					</div>
 				</a>
 
