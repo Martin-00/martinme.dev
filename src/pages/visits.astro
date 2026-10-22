@@ -1,0 +1,560 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import visits from '../data/visits.json';
+
+// Everything here is computed at build time from src/data/visits.json (see scripts/visits/).
+// The page ships no JavaScript.
+type Day = { views: number; countries: Record<string, number>; hours: number[]; pages: Record<string, number> };
+const days = visits.days as Record<string, Day>;
+const dates = Object.keys(days).sort();
+const total = dates.reduce((sum, d) => sum + days[d].views, 0);
+const fmt = (n: number) => n.toLocaleString('en-US');
+const heat = (v: number, max: number) => (v ? 0.22 + 0.78 * Math.sqrt(v / max) : 0);
+
+// Where: views and first visit per country
+const names = new Intl.DisplayNames(['en'], { type: 'region' });
+const flag = (code: string) => String.fromCodePoint(...[...code].map((c) => 0x1f1a5 + c.charCodeAt(0)));
+const byCountry = new Map<string, { views: number; first: string }>();
+for (const d of dates) {
+	for (const [code, n] of Object.entries(days[d].countries)) {
+		const c = byCountry.get(code) ?? { views: 0, first: d };
+		c.views += n;
+		byCountry.set(code, c);
+	}
+}
+const countries = [...byCountry]
+	.map(([code, c]) => ({
+		...c,
+		code,
+		name: code === 'ZZ' ? 'Unknown' : (names.of(code) ?? code),
+		flag: code === 'ZZ' ? '·' : flag(code),
+	}))
+	.sort((a, b) => b.views - a.views || a.first.localeCompare(b.first));
+const known = countries.filter((c) => c.code !== 'ZZ');
+const newest = [...known].sort((a, b) => b.first.localeCompare(a.first))[0];
+
+// What: views per page
+const byPage = new Map<string, number>();
+for (const d of dates) {
+	for (const [path, n] of Object.entries(days[d].pages)) byPage.set(path, (byPage.get(path) ?? 0) + n);
+}
+const pages = [...byPage].sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+// When: hour of the week in Monterrey time, Monday first
+const weekday = (date: string) => (new Date(`${date}T12:00:00Z`).getUTCDay() + 6) % 7;
+const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const week = WEEKDAYS.map(() => Array<number>(24).fill(0));
+for (const d of dates) days[d].hours.forEach((n, h) => (week[weekday(d)][h] += n));
+const maxHour = Math.max(0, ...week.flat());
+
+// When: a calendar of the last 52 weeks at most, one column per week
+const DAY = 86_400_000;
+const time = (date: string) => Date.parse(`${date}T00:00:00Z`);
+const calendar: { x: number; y: number; date: string; views: number | null }[] = [];
+const months: { x: number; label: string }[] = [];
+let weeks = 0;
+let maxDay = 0;
+if (dates.length) {
+	const last = time(dates.at(-1)!);
+	const lastMonday = last - weekday(dates.at(-1)!) * DAY;
+	const firstMonday = Math.max(time(dates[0]) - weekday(dates[0]) * DAY, lastMonday - 51 * 7 * DAY);
+	weeks = (lastMonday - firstMonday) / (7 * DAY) + 1;
+	const month = (t: number) => new Date(t).toLocaleString('en-US', { month: 'short', timeZone: 'UTC' });
+	for (let t = firstMonday; t <= last; t += DAY) {
+		const date = new Date(t).toISOString().slice(0, 10);
+		const x = Math.floor((t - firstMonday) / (7 * DAY));
+		calendar.push({ x, y: weekday(date), date, views: date >= dates[0] ? (days[date]?.views ?? 0) : null });
+		// Label each month above its first Monday
+		if (weekday(date) === 0 && Number(date.slice(8)) <= 7) months.push({ x, label: month(t) });
+	}
+	if (!months.length || months[0].x > 2) months.unshift({ x: 0, label: month(firstMonday) });
+	maxDay = Math.max(...calendar.map((c) => c.views ?? 0));
+}
+// Chart sizes in px. Charts shrink on narrow screens but never grow past these.
+const STEP = 15;
+const CELL = 12;
+const LEFT = 30;
+const TOP = 18;
+const HOUR = 32;
+const TALL = 22;
+const TALL_LEFT = 38;
+const calendarSize = { width: LEFT + weeks * STEP, height: TOP + 7 * STEP };
+const weekSize = { width: LEFT + 24 * HOUR, height: TOP + 7 * HOUR };
+const tallSize = { width: TALL_LEFT + 7 * TALL, height: TOP + 24 * TALL };
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title="Visits - Martin M. E."
+			description="When and where people read martinme.dev, counted without cookies, trackers, or IP addresses."
+		/>
+		<style>
+			.visits {
+				--mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+				max-width: 40em;
+				margin: 0 auto;
+				padding: 2.5em 0 1.5em;
+			}
+			.hero h1 {
+				font-size: 2.9em;
+				font-weight: 650;
+				letter-spacing: -0.025em;
+				line-height: 1.05;
+				margin: 0;
+			}
+			.hero .role {
+				font-family: var(--mono);
+				font-size: 0.7em;
+				letter-spacing: 0.04em;
+				color: rgba(255, 255, 255, 0.55);
+				margin: 1em 0 0;
+			}
+			.hero .role .sep {
+				color: var(--accent);
+				margin: 0 0.6em;
+			}
+			.lede {
+				font-size: 1.45em;
+				font-style: italic;
+				line-height: 1.35;
+				color: #ffffff;
+				margin: 1.3em 0 0;
+			}
+			section {
+				margin-top: 3em;
+			}
+			.section-head {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 1em;
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.5);
+				padding-bottom: 0.8em;
+				margin-bottom: 1.4em;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+			}
+			.section-head h2 {
+				font: inherit;
+				color: inherit;
+				letter-spacing: inherit;
+				margin: 0;
+			}
+
+			.stats {
+				display: grid;
+				grid-template-columns: repeat(3, 1fr);
+				gap: 1px;
+				margin-top: 2.2em;
+				background: var(--glass-border);
+				border: 1px solid var(--glass-border);
+				border-radius: 10px;
+				overflow: hidden;
+			}
+			.stat {
+				background: rgba(3, 6, 15, 0.92);
+				padding: 0.9em 1.1em;
+			}
+			.stat strong {
+				display: block;
+				font-size: 1.7em;
+				font-weight: 650;
+				letter-spacing: -0.02em;
+				line-height: 1.1;
+				color: #ffffff;
+				font-variant-numeric: tabular-nums;
+			}
+			.stat span {
+				font-family: var(--mono);
+				font-size: 0.62em;
+				letter-spacing: 0.1em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.5);
+			}
+
+			.chart {
+				display: block;
+				max-width: 100%;
+				height: auto;
+				overflow: visible;
+			}
+			.chart text {
+				font-family: var(--mono);
+				font-size: 9px;
+				fill: rgba(255, 255, 255, 0.45);
+			}
+			.chart .empty {
+				fill: rgba(255, 255, 255, 0.055);
+			}
+			.chart .before {
+				fill: rgba(255, 255, 255, 0.02);
+			}
+			.chart .hot {
+				fill: var(--accent);
+			}
+			.chart.tall {
+				display: none;
+			}
+			.caption {
+				font-size: 0.82em;
+				color: rgba(255, 255, 255, 0.55);
+				margin: 0.7em 0 2.2em;
+			}
+
+			.rows {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.rows li {
+				display: grid;
+				grid-template-columns: minmax(0, 1fr) 6.5em auto;
+				align-items: center;
+				gap: 0.9em;
+				margin: 0;
+				padding: 0.42em 0;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+				font-size: 0.95em;
+			}
+			.rows .label {
+				overflow: hidden;
+				text-overflow: ellipsis;
+				white-space: nowrap;
+			}
+			.rows .flag {
+				display: inline-block;
+				width: 1.6em;
+			}
+			.rows .bar {
+				height: 6px;
+				border-radius: 3px;
+				background: rgba(255, 255, 255, 0.06);
+				overflow: hidden;
+			}
+			.rows .bar i {
+				display: block;
+				height: 100%;
+				background: var(--accent);
+				border-radius: 3px;
+			}
+			.rows .num {
+				font-family: var(--mono);
+				font-size: 0.72em;
+				color: rgba(255, 255, 255, 0.6);
+				text-align: right;
+				white-space: nowrap;
+			}
+			.rows .num em {
+				font-style: normal;
+				color: rgba(255, 255, 255, 0.35);
+				margin-left: 0.8em;
+			}
+			.rows a {
+				color: #f0f0f0;
+				text-decoration: none;
+			}
+			.rows a:hover {
+				color: var(--accent);
+			}
+
+			.nothing {
+				margin-top: 2.2em;
+				padding: 1.4em 1.5em;
+				border: 1px dashed rgba(255, 255, 255, 0.18);
+				border-radius: 10px;
+				color: rgba(255, 255, 255, 0.75);
+			}
+			.nothing p {
+				margin: 0;
+			}
+			.how p,
+			.how li {
+				color: rgba(255, 255, 255, 0.8);
+			}
+			.how li {
+				margin-bottom: 0.4em;
+			}
+			@media (max-width: 720px) {
+				.visits {
+					padding-top: 1em;
+				}
+				.hero h1 {
+					font-size: 2.3em;
+				}
+				.lede {
+					font-size: 1.25em;
+				}
+				.stat strong {
+					font-size: 1.35em;
+				}
+				/* Names matter more than bars on a phone */
+				.rows li {
+					grid-template-columns: minmax(0, 1fr) auto;
+				}
+				.rows .bar {
+					display: none;
+				}
+				/* Keep calendar squares readable: scroll sideways, opening on the newest weeks */
+				.scroll {
+					overflow-x: auto;
+					direction: rtl;
+				}
+				.scroll .chart {
+					direction: ltr;
+					max-width: none;
+				}
+				.chart.wide {
+					display: none;
+				}
+				.chart.tall {
+					display: block;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="glass-card">
+				<div class="visits">
+					<div class="hero">
+						<h1>Visits</h1>
+						<p class="role">when<span class="sep">·</span>where<span class="sep">·</span>no cookies, no trackers</p>
+						<p class="lede">When and where people read this site, counted without tracking anyone.</p>
+					</div>
+
+					{
+						dates.length === 0 ? (
+							<div class="nothing">
+								<p>
+									Nothing yet. Counting starts once the server logs are switched on, and the first
+									visit will appear here after the next update.
+								</p>
+							</div>
+						) : (
+							<>
+								<div class="stats">
+									<div class="stat">
+										<strong>{fmt(total)}</strong>
+										<span>page views</span>
+									</div>
+									<div class="stat">
+										<strong>{fmt(known.length)}</strong>
+										<span>{known.length === 1 ? 'country' : 'countries'}</span>
+									</div>
+									<div class="stat">
+										<strong>{dates[0]}</strong>
+										<span>counting since</span>
+									</div>
+								</div>
+
+								<section aria-labelledby="when">
+									<div class="section-head">
+										<h2 id="when">When</h2>
+										<span>Monterrey time</span>
+									</div>
+									<div class="scroll">
+									<svg
+										class="chart"
+										{...calendarSize}
+										viewBox={`0 0 ${calendarSize.width} ${calendarSize.height}`}
+										role="img"
+										aria-label={`Page views per day since ${dates[0]}`}
+									>
+										{months.map((m) => (
+											<text x={LEFT + m.x * STEP} y={10}>
+												{m.label}
+											</text>
+										))}
+										{[0, 2, 4].map((y) => (
+											<text x={0} y={TOP + y * STEP + 9}>
+												{WEEKDAYS[y]}
+											</text>
+										))}
+										{calendar.map((c) => (
+											<rect
+												x={LEFT + c.x * STEP}
+												y={TOP + c.y * STEP}
+												width={CELL}
+												height={CELL}
+												rx={2.5}
+												class={c.views === null ? 'before' : c.views ? 'hot' : 'empty'}
+												fill-opacity={c.views ? heat(c.views, maxDay) : undefined}
+											>
+												<title>
+													{c.date}: {c.views === null ? 'before counting started' : `${fmt(c.views)} ${c.views === 1 ? 'view' : 'views'}`}
+												</title>
+											</rect>
+										))}
+									</svg>
+									</div>
+									<p class="caption">Each square is a day. The brighter, the more pages were read.</p>
+
+									<svg
+										class="chart wide"
+										{...weekSize}
+										viewBox={`0 0 ${weekSize.width} ${weekSize.height}`}
+										role="img"
+										aria-label="Page views by day of the week and hour, Monterrey time"
+									>
+										{[0, 6, 12, 18].map((h) => (
+											<text x={LEFT + h * HOUR} y={10}>
+												{String(h).padStart(2, '0')}:00
+											</text>
+										))}
+										{WEEKDAYS.map((name, y) => (
+											<text x={0} y={TOP + y * HOUR + 18}>
+												{name}
+											</text>
+										))}
+										{week.map((row, y) =>
+											row.map((v, h) => (
+												<rect
+													x={LEFT + h * HOUR}
+													y={TOP + y * HOUR}
+													width={HOUR - 3}
+													height={HOUR - 3}
+													rx={3}
+													class={v ? 'hot' : 'empty'}
+													fill-opacity={v ? heat(v, maxHour) : undefined}
+												>
+													<title>
+														{WEEKDAYS[y]} {String(h).padStart(2, '0')}:00: {fmt(v)} {v === 1 ? 'view' : 'views'}
+													</title>
+												</rect>
+											)),
+										)}
+									</svg>
+									{/* The same grid turned on its side, for phones: days across, hours down */}
+									<svg
+										class="chart tall"
+										{...tallSize}
+										viewBox={`0 0 ${tallSize.width} ${tallSize.height}`}
+										role="img"
+										aria-label="Page views by day of the week and hour, Monterrey time"
+									>
+										{WEEKDAYS.map((name, x) => (
+											<text x={TALL_LEFT + x * TALL} y={10}>
+												{name}
+											</text>
+										))}
+										{[0, 3, 6, 9, 12, 15, 18, 21].map((h) => (
+											<text x={0} y={TOP + h * TALL + 12}>
+												{String(h).padStart(2, '0')}:00
+											</text>
+										))}
+										{week.map((row, x) =>
+											row.map((v, h) => (
+												<rect
+													x={TALL_LEFT + x * TALL}
+													y={TOP + h * TALL}
+													width={TALL - 3}
+													height={TALL - 3}
+													rx={3}
+													class={v ? 'hot' : 'empty'}
+													fill-opacity={v ? heat(v, maxHour) : undefined}
+												>
+													<title>
+														{WEEKDAYS[x]} {String(h).padStart(2, '0')}:00: {fmt(v)} {v === 1 ? 'view' : 'views'}
+													</title>
+												</rect>
+											)),
+										)}
+									</svg>
+									<p class="caption">The hours of the week when people read, all weeks added together.</p>
+								</section>
+
+								<section aria-labelledby="where">
+									<div class="section-head">
+										<h2 id="where">Where</h2>
+										<span>first visit</span>
+									</div>
+									<ul class="rows">
+										{countries.map((c) => (
+											<li>
+												<span class="label">
+													<span class="flag" aria-hidden="true">
+														{c.flag}
+													</span>
+													{c.name}
+												</span>
+												<span class="bar">
+													<i style={`width: ${(100 * c.views) / countries[0].views}%`} />
+												</span>
+												<span class="num">
+													{fmt(c.views)}
+													<em>{c.first}</em>
+												</span>
+											</li>
+										))}
+									</ul>
+									{newest && (
+										<p class="caption">
+											Newest arrival: {newest.flag} {newest.name}, on {newest.first}.
+										</p>
+									)}
+								</section>
+
+								<section aria-labelledby="what">
+									<div class="section-head">
+										<h2 id="what">What</h2>
+										<span>most read</span>
+									</div>
+									<ul class="rows">
+										{pages.map(([path, n]) => (
+											<li>
+												<span class="label">
+													<a href={path}>{path}</a>
+												</span>
+												<span class="bar">
+													<i style={`width: ${(100 * n) / pages[0][1]}%`} />
+												</span>
+												<span class="num">{fmt(n)}</span>
+											</li>
+										))}
+									</ul>
+								</section>
+							</>
+						)
+					}
+
+					<section class="how" aria-labelledby="how">
+						<div class="section-head">
+							<h2 id="how">How this is counted</h2>
+							{visits.updated && <span>updated {visits.updated}</span>}
+						</div>
+						<p>
+							CloudFront, the network that serves this site, writes one line per request. It sees your IP
+							address, as any server must, but the address never reaches these logs. They keep only:
+						</p>
+						<ul>
+							<li>the date and time, and your country as CloudFront works it out;</li>
+							<li>your network's number, which tells home and phone connections from data centers;</li>
+							<li>
+								the page and how it was asked for, the response status, and the description your browser
+								sends of itself (its user agent).
+							</li>
+						</ul>
+						<p>
+							No cookies, no tracking script, nothing stored in your browser. A script on my computer turns
+							those lines into the daily counts above, skipping crawlers and data centers, and the raw
+							lines are deleted after 90 days. My own visits count too. The
+							<a href="https://github.com/martinme-dev/martinme.dev/blob/main/infra/visits.tf" target="_blank" rel="noopener noreferrer">log fields</a>
+							and the
+							<a href="https://github.com/martinme-dev/martinme.dev/blob/main/scripts/visits/aggregate.py" target="_blank" rel="noopener noreferrer">counting script</a>
+							are public.
+						</p>
+					</section>
+				</div>
+			</div>
+		</main>
+		<Footer />
+	</body>
+</html>
