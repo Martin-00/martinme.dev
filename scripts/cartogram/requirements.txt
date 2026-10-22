@@ -1,4 +1,5 @@
 numpy
+pillow
 pyproj
 pyshp
 shapely

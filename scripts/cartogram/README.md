@@ -32,6 +32,15 @@ SIZE_VAR=P3YM_HLI ~/.cache/martinme-cartogram/venv/bin/python scripts/cartogram/
 
 **Size by counts, color by rates.** Area can only mean "how many," so only counts get their own cartogram (`SIZE_VAR`), and only when they are distinct: at least 25% of the population map must double or halve. Indigenous-language speakers (87%), homes without any communication technology (74%), homes without electricity (66%), illiterate people (57%), and Afro-Mexican people (29%) qualify; people 65+ (5%) and without health coverage (4%) stay color-only. A size-by map ships only if it meets thresholds set before seeing results: median area error ≤ 2%, 90th percentile ≤ 5%, count-weighted ≤ 3%, overlap ≤ 0.5%, self-crossing area ≤ 0.1%.
 
+## Monterrey
+
+```bash
+~/.cache/martinme-cartogram/venv/bin/python scripts/cartogram/metro.py    # tracts: land, people, empty homes
+~/.cache/martinme-cartogram/venv/bin/python -I scripts/cartogram/basemap.py  # terrain, rivers, avenues, names
+```
+
+`metro.py` builds the metro's 2,185 urban tracts (INEGI layer `19a` and the census by tract and block) into `src/assets/monterrey-cartogram/`. `basemap.py` adds the city references and carries them into every shape through the tracts' own vertices: INEGI's arteries (layer `19e`), OpenStreetMap's rivers (INEGI's miss most of the Santa Catarina inside the city), Wikidata's peaks and landmarks, and Copernicus DEM GLO-90 terrain. Its gates (vertex accuracy, folds where terrain shows, places where they belong) are in its docstring; terrain appears only in shapes whose warp passes them.
+
 ## Engine notes
 
 `setup_engine.sh` applies three local changes to cartogram-cpp (AGPL-3.0, used offline only):

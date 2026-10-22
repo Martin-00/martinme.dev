@@ -3,6 +3,7 @@ import BaseHead from './BaseHead.astro';
 import Footer from './Footer.astro';
 import Header from './Header.astro';
 import metrics from '../assets/monterrey-cartogram/metrics.json';
+import basemapMetrics from '../assets/monterrey-cartogram/basemap-metrics.json';
 import variables from '../assets/monterrey-cartogram/variables.json';
 
 interface Props {
@@ -25,6 +26,8 @@ const groups = [...new Set(variables.variables.map(groupOf))];
 const worstIndex = variables.ids.indexOf(people.worst_tract);
 const worst = { people: variables.population[worstIndex], municipio: muns[variables.tract_municipio[worstIndex]] };
 const withheldTotalOnly = facts.empty_suppressed - empty.unknown_tracts;
+const warpP95 = Math.max(...Object.values(basemapMetrics.heldout).map((h) => h.p95_px));
+const plainGround = Object.keys(basemapMetrics.folds).filter((s) => !basemapMetrics.terrain_shapes.includes(s));
 const site = 'https://martinme.dev';
 const href = { en: '/monterrey/', es: '/monterrey/es/' };
 
@@ -36,11 +39,12 @@ const t = es
 			h1: 'Monterrey, por su gente',
 			subtitle: `Las ${fmt(facts.tracts)} AGEB urbanas del área metropolitana de Monterrey, del tamaño de quienes las habitan. Censo 2020 de INEGI.`,
 			shape: { land: 'Territorio', people: 'Personas', empty: 'Viviendas deshabitadas' },
-			shapeAria: 'Forma del mapa',
-			colorAria: 'Colorear el mapa por',
-			density: 'Color: personas por km²',
-			municipio: 'Color: municipio',
+			sizeLabel: 'Tamaño de cada AGEB según',
+			colorLabel: 'Color según',
+			density: 'Personas por km²',
+			municipio: 'Municipio',
 			search: 'Buscar municipio',
+			details: 'Lugares y relieve',
 			copy: 'Copiar enlace',
 			loading: 'Cargando la ciudad...',
 			hint: 'Acerca con dos dedos, o con ⌘/Ctrl + scroll; arrastra para explorar; toca una AGEB para seleccionarla.',
@@ -54,11 +58,12 @@ const t = es
 			h1: 'Monterrey, by its people',
 			subtitle: `Metro Monterrey's ${fmt(facts.tracts)} urban census tracts, sized by who lives there. INEGI Census 2020.`,
 			shape: { land: 'Land', people: 'People', empty: 'Empty homes' },
-			shapeAria: 'Map shape',
-			colorAria: 'Color the map by',
-			density: 'Color: people per km²',
-			municipio: 'Color: municipio',
+			sizeLabel: 'Size each tract by',
+			colorLabel: 'Color by',
+			density: 'People per km²',
+			municipio: 'Municipio',
 			search: 'Find a municipio',
+			details: 'Places & terrain',
 			copy: 'Copy link',
 			loading: 'Loading the city...',
 			hint: 'Zoom with two fingers, or ⌘/Ctrl + scroll; drag to explore; tap a tract to select it.',
@@ -114,34 +119,68 @@ const client = es
 			.controls {
 				display: flex;
 				justify-content: center;
-				gap: 0.5em;
-				margin-bottom: 0.75em;
+				align-items: flex-end;
+				gap: 0.75em 1.5em;
+				margin-bottom: 0.9em;
 				flex-wrap: wrap;
+			}
+			.control {
+				display: flex;
+				flex-direction: column;
+				gap: 0.35em;
+				min-width: 0;
+			}
+			.control-label {
+				font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+				font-size: 0.62em;
+				letter-spacing: 0.14em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.5);
 			}
 			.controls button,
 			.color-picker select,
 			.search input,
-			.copy-link {
+			.copy-link,
+			.details-toggle {
 				background: rgba(255, 255, 255, 0.05);
-				border: 1px solid rgba(255, 255, 255, 0.15);
-				color: rgba(255, 255, 255, 0.8);
+				border: 1px solid rgba(255, 255, 255, 0.18);
+				color: rgba(255, 255, 255, 0.85);
 				font-family: 'Source Serif', Georgia, serif;
-				font-size: 0.75em;
-				letter-spacing: 0.04em;
-				padding: 0.35em 0.8em;
+				font-size: 0.85em;
+				letter-spacing: 0.02em;
+				padding: 0.5em 1em;
 			}
 			.controls button {
 				cursor: pointer;
 				transition: all 0.15s ease;
 			}
 			.controls button:hover,
-			.copy-link:hover {
+			.copy-link:hover,
+			.details-toggle:hover {
 				color: var(--accent);
 			}
 			.controls button.active {
-				background: rgba(251, 191, 36, 0.1);
+				background: rgba(251, 191, 36, 0.12);
 				border-color: var(--accent);
 				color: var(--accent);
+			}
+			.details-toggle {
+				cursor: pointer;
+				white-space: nowrap;
+			}
+			.details-toggle::before {
+				content: '';
+				display: inline-block;
+				width: 0.7em;
+				height: 0.7em;
+				margin-right: 0.45em;
+				border: 1px solid currentColor;
+				border-radius: 2px;
+				vertical-align: -0.05em;
+			}
+			.details-toggle[aria-pressed='true']::before {
+				background: var(--accent);
+				border-color: var(--accent);
 			}
 			.control-group {
 				display: flex;
@@ -158,6 +197,7 @@ const client = es
 			}
 			.color-picker select {
 				cursor: pointer;
+				min-width: 16em;
 			}
 			.color-picker select:focus,
 			.search input:focus {
@@ -217,14 +257,25 @@ const client = es
 			.map {
 				position: relative;
 				width: 100%;
+				background: #21262f;
+				border-radius: 6px;
+				overflow: hidden;
 			}
 			.map canvas {
 				display: block;
 				width: 100%;
 			}
 			.map #map-base {
+				position: relative;
+				z-index: 1;
 				touch-action: pan-x pan-y;
 				cursor: grab;
+			}
+			.map #map-terrain {
+				z-index: 0;
+			}
+			.map #map-overlay {
+				z-index: 2;
 			}
 			.map canvas + canvas {
 				position: absolute;
@@ -238,7 +289,7 @@ const client = es
 				display: flex;
 				flex-direction: column;
 				gap: 4px;
-				z-index: 2;
+				z-index: 3;
 			}
 			.zoom-controls button {
 				width: 30px;
@@ -267,19 +318,31 @@ const client = es
 				font-style: italic;
 			}
 			.legend {
+				position: absolute;
+				right: 10px;
+				bottom: 10px;
+				z-index: 3;
 				display: flex;
-				justify-content: center;
 				align-items: center;
-				gap: 0.6em;
-				margin: 0.75em auto 0;
-				padding: 0.6em 1.2em;
-				background: rgba(255, 255, 255, 0.03);
-				border: 1px solid rgba(255, 255, 255, 0.06);
-				border-radius: 6px;
+				gap: 0.35em 0.6em;
 				flex-wrap: wrap;
-				font-size: 0.75em;
-				color: rgba(255, 255, 255, 0.55);
-				max-width: fit-content;
+				max-width: min(22em, calc(100% - 20px));
+				box-sizing: border-box;
+				padding: 0.55em 0.85em;
+				background: rgba(14, 18, 26, 0.86);
+				border: 1px solid rgba(255, 255, 255, 0.12);
+				border-radius: 6px;
+				font-size: 0.72em;
+				color: rgba(255, 255, 255, 0.7);
+				pointer-events: none;
+			}
+			.legend :global(.legend-title) {
+				flex-basis: 100%;
+				color: #fff;
+				font-weight: 600;
+			}
+			.legend :global(.legend-item:last-child) {
+				flex-basis: 100%;
 			}
 			.legend:empty {
 				display: none;
@@ -290,7 +353,7 @@ const client = es
 				gap: 0.3em;
 			}
 			.legend :global(.legend-bar) {
-				width: 12em;
+				width: 8em;
 				height: 10px;
 				border-radius: 2px;
 				border: 1px solid rgba(255, 255, 255, 0.1);
@@ -357,16 +420,39 @@ const client = es
 			}
 			@media (max-width: 720px) {
 				.controls {
-					gap: 0.4em;
+					gap: 0.6em;
 				}
-				.color-picker {
+				.control {
 					flex-basis: 100%;
+				}
+				.control-group button {
+					flex: 1 1 0;
+					padding-left: 0.4em;
+					padding-right: 0.4em;
 				}
 				.color-picker select {
 					width: 100%;
+					min-width: 0;
 				}
 				.search {
 					max-width: none;
+				}
+				.finder {
+					flex-wrap: wrap;
+				}
+				main {
+					padding-left: 0.4em;
+					padding-right: 0.4em;
+				}
+				.glass-card {
+					padding: 1em 0.6em;
+				}
+				.legend {
+					position: static;
+					max-width: none;
+					border-width: 1px 0 0;
+					border-radius: 0;
+					font-size: 0.68em;
 				}
 			}
 		</style>
@@ -382,12 +468,15 @@ const client = es
 				</div>
 
 				<div class="controls">
-					<div class="control-group" role="group" aria-label={t.shapeAria}>
-						<button data-shape="land">{t.shape.land}</button>
-						{available.map((name) => <button data-shape={name}>{t.shape[name as 'people' | 'empty']}</button>)}
+					<div class="control">
+						<span class="control-label" id="size-label">{t.sizeLabel}</span>
+						<div class="control-group" role="group" aria-labelledby="size-label">
+							<button data-shape="land">{t.shape.land}</button>
+							{available.map((name) => <button data-shape={name}>{t.shape[name as 'people' | 'empty']}</button>)}
+						</div>
 					</div>
-					<label class="color-picker">
-						<span class="sr-only">{t.colorAria}</span>
+					<label class="control color-picker">
+						<span class="control-label">{t.colorLabel}</span>
 						<select id="color-select">
 							<option value="density">{t.density}</option>
 							<option value="municipio">{t.municipio}</option>
@@ -405,21 +494,23 @@ const client = es
 						<input id="search" type="search" placeholder={t.search} autocomplete="off" spellcheck="false" aria-label={t.search} aria-controls="search-results" />
 						<ul id="search-results" class="search-results" role="listbox" hidden></ul>
 					</div>
+					<button id="details" class="details-toggle" type="button" aria-pressed="true">{t.details}</button>
 					<button id="copy-link" class="copy-link" type="button">{t.copy}</button>
 				</div>
 
 				<div class="map" id="map" data-strings={JSON.stringify(client)}>
 					<div class="loading" id="loading">{t.loading}</div>
 					<canvas id="map-base" role="img" aria-label={t.canvas}></canvas>
+					<canvas id="map-terrain" aria-hidden="true"></canvas>
 					<canvas id="map-overlay" aria-hidden="true"></canvas>
 					<div class="zoom-controls">
 						<button id="zoom-in" type="button" aria-label="+">+</button>
 						<button id="zoom-out" type="button" aria-label="−">−</button>
 						<button id="zoom-reset" type="button" aria-label="⟲">⟲</button>
 					</div>
+					<div id="legend" class="legend"></div>
 				</div>
 				<p class="map-hint">{t.hint}</p>
-				<div id="legend" class="legend"></div>
 				<p id="selection" class="selection" aria-live="polite" hidden></p>
 				<div class="tooltip" id="tooltip"></div>
 
@@ -488,11 +579,21 @@ const client = es
 								{people.worst_tract_area_share_pct}% del mapa, más que su proporción: una mota de unos cuantos píxeles.
 							</li>
 						</ul>
+						<p>
+							Montañas, ríos, avenidas y lugares se mueven con el mapa. Cada esquina de AGEB existe en todas las formas,
+							así que los triángulos entre esquinas llevan cada punto de una calle o un río a donde el cartograma movió su
+							entorno: una esquina que se deja fuera cae a menos de {warpP95.toFixed(1)} px de su lugar real (el 95% de
+							ellas, en un mapa de 1,000 px). Más allá de las AGEB, ese movimiento se extiende de forma suave.
+							{plainGround.length > 0 &&
+								` El relieve solo se dibuja donde ese estiramiento se pliega en menos del ${basemapMetrics.gates.visible_folded_frame_pct}% del suelo visible; ${plainGround.map((s) => `"${t.shape[s as 'people' | 'empty']}"`).join(' y ')} aprieta demasiado los huecos angostos entre AGEB, así que muestra suelo liso.`}
+						</p>
 						<p class="note">
 							Datos: INEGI, Censo de Población y Vivienda 2020 (resultados por AGEB y manzana urbana; Marco
 							Geoestadístico). Definición metropolitana: Metrópolis de México 2020 (SEDATU, CONAPO, INEGI). Algoritmo:
 							Gastner, Seguy y More (2018), PNAS. Hecho con el mismo proceso que el
-							<a href="/cartogram">cartograma de México</a> (en inglés).
+							<a href="/cartogram">cartograma de México</a> (en inglés). Calles: INEGI. Ríos: © colaboradores de
+							OpenStreetMap (ODbL). Relieve: Copernicus DEM GLO-90, © DLR e.V. 2010-2014 y © Airbus Defence and Space GmbH
+							2014-2018, provisto bajo COPERNICUS por la Unión Europea y la ESA. Lugares: Wikidata.
 						</p>
 					</div>
 				) : (
@@ -557,10 +658,21 @@ const client = es
 								{people.worst_tract_area_share_pct}% of the map, larger than its share: a speck of a few pixels.
 							</li>
 						</ul>
+						<p>
+							Mountains, rivers, avenues and places move with the map. Every tract corner exists in each shape, so the
+							triangles between corners carry each point of a street or river to where the cartogram moved its
+							surroundings: a corner left out of them still lands within {warpP95.toFixed(1)} px of its true place (95% of
+							them, on a 1,000-px map). Beyond the tracts, that movement is extended smoothly.
+							{plainGround.length > 0 &&
+								` Terrain is drawn only where that stretch folds less than ${basemapMetrics.gates.visible_folded_frame_pct}% of the visible ground; ${plainGround.map((s) => `"${t.shape[s as 'people' | 'empty']}"`).join(' and ')} squeezes the narrow gaps between tracts too hard for that, so it shows plain ground.`}
+						</p>
 						<p class="note">
 							Data: INEGI, Censo de Poblacion y Vivienda 2020 (census by urban tract and block; Marco Geoestadistico).
 							Metro definition: Metropolis de Mexico 2020 (SEDATU, CONAPO, INEGI). Algorithm: Gastner, Seguy and More
-							(2018), PNAS. Built with the same pipeline as the <a href="/cartogram">Mexico cartogram</a>.
+							(2018), PNAS. Built with the same pipeline as the <a href="/cartogram">Mexico cartogram</a>. Streets: INEGI.
+							Rivers: © OpenStreetMap contributors (ODbL). Terrain: Copernicus DEM GLO-90, © DLR e.V. 2010-2014 and ©
+							Airbus Defence and Space GmbH 2014-2018, provided under COPERNICUS by the European Union and ESA. Places:
+							Wikidata.
 						</p>
 					</div>
 				)}
@@ -571,6 +683,8 @@ const client = es
 		<script>
 			import * as d3 from 'd3';
 			import topoUrl from '../assets/monterrey-cartogram/monterrey.topo.json?url';
+			import basemapUrl from '../assets/monterrey-cartogram/basemap.json?url';
+			import terrainUrl from '../assets/monterrey-cartogram/terrain.webp?url';
 			import variables from '../assets/monterrey-cartogram/variables.json';
 
 			type Ring = Record<string, Float32Array>;
@@ -598,6 +712,7 @@ const client = es
 			const es = S.lang === 'es';
 			const base = document.getElementById('map-base') as HTMLCanvasElement;
 			const overlay = document.getElementById('map-overlay') as HTMLCanvasElement;
+			const terrainCanvas = document.getElementById('map-terrain') as HTMLCanvasElement;
 			const tooltip = d3.select('#tooltip');
 			const vars = new Map<string, Variable>(variables.variables.map((v) => [v.id, v]));
 			const munNames = variables.municipios as Record<string, string>;
@@ -624,6 +739,21 @@ const client = es
 			let height = 0;
 			let zoomT = d3.zoomIdentity;
 			let targetShape = 'people';
+			let fits: Record<string, d3.GeoIdentityTransform> = {};
+
+			// City references (terrain, rivers, avenues, places, names), moved into every shape by the same warp
+			// as the tracts: see scripts/cartogram/basemap.py. They load after the tracts and never block them.
+			type RefLine = { kind: 'river' | 'avenue'; name: string; coords: Record<string, number[][][]>; screen: Ring[]; spots: [number, number][] };
+			type RefPoint = { kind: string; id?: string; label: string; rank: number; coords: Record<string, number[]>; screen: Record<string, number[]> };
+			let refLines: RefLine[] = [];
+			let refPoints: RefPoint[] = [];
+			let terrainShapes = new Set<string>();
+			let showDetails = true;
+			let mesh: { data: Record<string, Float64Array>; uv: Float32Array; index: Uint32Array } | null = null;
+			let terrain: { gl: WebGLRenderingContext; buffers: Record<string, WebGLBuffer>; attrib: Record<string, number>; uniform: Record<string, WebGLUniformLocation | null> } | null = null;
+			const terrainImage = new Image();
+			terrainImage.decoding = 'async';
+			terrainImage.src = terrainUrl;
 
 			const decode = (transform: any, arcs: number[][][]) => {
 				const [sx, sy] = transform.scale;
@@ -635,6 +765,7 @@ const client = es
 			};
 
 			async function load() {
+				const basemapLoad = fetch(basemapUrl).then((r) => r.json()).catch(() => null);
 				const topo = await fetch(topoUrl).then((r) => r.json());
 				const arcs: Record<string, number[][][]> = { land: decode(topo.transform, topo.arcs) };
 				for (const [name, s] of Object.entries<any>(topo.shapes)) arcs[name] = decode(s.transform, s.arcs);
@@ -686,7 +817,8 @@ const client = es
 
 				document.getElementById('loading')!.remove();
 				applyURL();
-				new ResizeObserver(layout).observe(container);
+				// Only a new width changes the layout; heights change when the legend or selection text does.
+				new ResizeObserver(() => container.clientWidth !== width && layout()).observe(container);
 				layout();
 				if (targetShape !== 'land' && !reducedMotion) setTimeout(() => morphTo(targetShape), 700);
 				else showShape(targetShape);
@@ -694,30 +826,39 @@ const client = es
 				renderSelection();
 				syncURL();
 				if (selected || selectedMun) setTimeout(zoomToSelection, reducedMotion || targetShape === 'land' ? 0 : 700 + MORPH_MS + 100);
+
+				const basemap = await basemapLoad;
+				if (!basemap) return;
+				setupBasemap(basemap, arcs);
+				projectBasemap();
+				draw();
+				if (terrainImage.complete && terrainImage.naturalWidth) startTerrain();
+				else terrainImage.addEventListener('load', startTerrain, { once: true });
 			}
+
+			const project = (p: any, coords: number[][]) => {
+				const out = new Float32Array(coords.length * 2);
+				coords.forEach((c, i) => {
+					const [x, y] = p(c as [number, number])!;
+					out[2 * i] = x;
+					out[2 * i + 1] = y;
+				});
+				return out;
+			};
 
 			function layout() {
 				width = container.clientWidth;
-				height = Math.round(width * (width < 600 ? 1.0 : 0.72));
+				height = Math.round(Math.min(width * (width < 600 ? 1.0 : 0.72), Math.max(320, window.innerHeight * 0.85)));
 				const dpr = window.devicePixelRatio || 1;
-				for (const c of [base, overlay]) {
+				for (const c of [base, overlay, terrainCanvas]) {
 					c.width = Math.round(width * dpr);
 					c.height = Math.round(height * dpr);
 					c.style.height = `${height}px`;
 				}
 				const extent: [[number, number], [number, number]] = [[PAD, PAD], [width - PAD, height - PAD]];
-				const fits = Object.fromEntries(shapeNames.map((s) => [s, d3.geoIdentity().reflectY(true).fitExtent(extent, {
+				fits = Object.fromEntries(shapeNames.map((s) => [s, d3.geoIdentity().reflectY(true).fitExtent(extent, {
 					type: 'MultiPoint', coordinates: tracts.flatMap((tr) => tr.stitched[s].flat()),
 				} as any)]));
-				const project = (p: any, coords: number[][]) => {
-					const out = new Float32Array(coords.length * 2);
-					coords.forEach((c, i) => {
-						const [x, y] = p(c as [number, number])!;
-						out[2 * i] = x;
-						out[2 * i + 1] = y;
-					});
-					return out;
-				};
 				const box = (arrays: Float32Array[]) => {
 					let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
 					for (const a of arrays) for (let i = 0; i < a.length; i += 2) {
@@ -736,7 +877,164 @@ const client = es
 				zoom.extent([[0, 0], [width, height]]).translateExtent([[0, 0], [width, height]]);
 				zoomT = d3.zoomIdentity;
 				d3.select(base).property('__zoom', zoomT);
+				projectBasemap();
 				draw();
+			}
+
+			function setupBasemap(basemap: any, arcs: Record<string, number[][][]>) {
+				const unrun = (run: number[], step: number) => {
+					const out: number[][] = [];
+					for (let i = 0, x = 0, y = 0; i < run.length; i += 2) out.push([(x += run[i]) * step, (y += run[i + 1]) * step]);
+					return out;
+				};
+				const linesOf = (f: any) => Object.fromEntries(shapeNames.map((s) => [s, f.lines[s].map((r: number[]) => unrun(r, basemap.scales[s]))]));
+				refLines = [
+					...basemap.avenues.map((f: any) => ({ kind: 'avenue' as const, name: f.name, coords: linesOf(f), screen: [], spots: [] })),
+					...basemap.rivers.map((f: any) => ({ kind: 'river' as const, name: f.name, coords: linesOf(f), screen: [], spots: [] })),
+				];
+				const population = d3.rollup(tracts, (list) => d3.sum(list, (tr) => tr.population), (tr) => tr.municipio);
+				refPoints = [
+					...Object.entries<any>(basemap.municipios).map(([m, p]) => ({ kind: 'municipio', id: m, label: p.label, rank: population.get(m) ?? 0, coords: p, screen: {} })),
+					...basemap.places.map((p: any) => ({ kind: p.kind, label: es ? p.es : p.en, rank: 0, coords: p, screen: {} })),
+				];
+				terrainShapes = new Set(basemap.terrain_shapes);
+				// The terrain mesh: every tract vertex, in topology order so each shape lines up, plus the anchors.
+				const anchors = basemap.anchors;
+				const n = d3.sum(arcs.land, (a) => a.length) + anchors.land.length / 2;
+				const data = Object.fromEntries(shapeNames.map((s) => [s, new Float64Array(2 * n)]));
+				let k = 0;
+				arcs.land.forEach((arc, i) => arc.forEach((_, j) => {
+					for (const s of shapeNames) {
+						data[s][2 * k] = arcs[s][i][j][0];
+						data[s][2 * k + 1] = arcs[s][i][j][1];
+					}
+					k++;
+				}));
+				for (let a = 0; a < anchors.land.length; a += 2, k++) {
+					for (const s of shapeNames) {
+						data[s][2 * k] = anchors[s][a] * basemap.scales[s];
+						data[s][2 * k + 1] = anchors[s][a + 1] * basemap.scales[s];
+					}
+				}
+				const [fx0, fy0, fx1, fy1] = basemap.frame;
+				const uv = new Float32Array(2 * n);
+				for (let i = 0; i < n; i++) {
+					uv[2 * i] = (data.land[2 * i] - fx0) / (fx1 - fx0);
+					uv[2 * i + 1] = (fy1 - data.land[2 * i + 1]) / (fy1 - fy0);
+				}
+				mesh = { data, uv, index: new d3.Delaunay(data.land).triangles };
+			}
+
+			const lengthOf = (a: Float32Array) => {
+				let d = 0;
+				for (let i = 2; i < a.length; i += 2) d += Math.hypot(a[i] - a[i - 2], a[i + 1] - a[i - 1]);
+				return d;
+			};
+			const indexAt = (a: Float32Array, f: number) => {
+				const goal = f * lengthOf(a);
+				for (let i = 2, d = 0; i < a.length; i += 2) {
+					d += Math.hypot(a[i] - a[i - 2], a[i + 1] - a[i - 1]);
+					if (d >= goal) return i / 2;
+				}
+				return a.length / 2 - 1;
+			};
+
+			function projectBasemap() {
+				if (!refPoints.length || !fits.land) return;
+				for (const l of refLines) {
+					l.screen = l.coords.land.map((_, k) => Object.fromEntries(shapeNames.map((s) => [s, project(fits[s], l.coords[s][k])])));
+					// Label spots: the middle of the longest piece, then a quarter in from either end.
+					const longest = d3.maxIndex(l.screen, (r) => lengthOf(r.land));
+					l.spots = [0.5, 0.25, 0.75].map((f) => [longest, indexAt(l.screen[longest].land, f)]);
+				}
+				for (const p of refPoints) p.screen = Object.fromEntries(shapeNames.map((s) => [s, fits[s](p.coords[s] as [number, number])!]));
+				if (terrain) uploadMesh();
+			}
+
+			function startTerrain() {
+				if (!mesh || terrain) return;
+				const gl = terrainCanvas.getContext('webgl', { premultipliedAlpha: true, antialias: true, depth: false });
+				if (!gl || !gl.getExtension('OES_element_index_uint')) return;
+				const program = gl.createProgram()!;
+				const attach = (type: number, source: string) => {
+					const shader = gl.createShader(type)!;
+					gl.shaderSource(shader, source);
+					gl.compileShader(shader);
+					gl.attachShader(program, shader);
+				};
+				attach(gl.VERTEX_SHADER, `
+					attribute vec2 a; attribute vec2 b; attribute vec2 uv;
+					uniform float t; uniform vec3 zoom; uniform vec2 size;
+					varying vec2 v;
+					void main() {
+						vec2 p = mix(a, b, t) * zoom.x + zoom.yz;
+						gl_Position = vec4(p.x / size.x * 2.0 - 1.0, 1.0 - p.y / size.y * 2.0, 0.0, 1.0);
+						v = uv;
+					}`);
+				attach(gl.FRAGMENT_SHADER, `
+					precision mediump float;
+					uniform sampler2D image; uniform float alpha;
+					varying vec2 v;
+					void main() {
+						vec2 edge = min(v, 1.0 - v);
+						float a = alpha * smoothstep(0.0, 0.05, min(edge.x, edge.y));
+						gl_FragColor = vec4(texture2D(image, v).rgb * a, a);
+					}`);
+				gl.linkProgram(program);
+				if (!gl.getProgramParameter(program, gl.LINK_STATUS)) return;
+				gl.useProgram(program);
+				const attrib = Object.fromEntries(['a', 'b', 'uv'].map((name) => [name, gl.getAttribLocation(program, name)]));
+				gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+				gl.bufferData(gl.ARRAY_BUFFER, mesh.uv, gl.STATIC_DRAW);
+				gl.vertexAttribPointer(attrib.uv, 2, gl.FLOAT, false, 0, 0);
+				for (const name of ['a', 'b', 'uv']) gl.enableVertexAttribArray(attrib[name]);
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, gl.createBuffer());
+				gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.index, gl.STATIC_DRAW);
+				gl.bindTexture(gl.TEXTURE_2D, gl.createTexture());
+				gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, terrainImage);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+				gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+				const uniform = Object.fromEntries(['t', 'zoom', 'size', 'alpha'].map((name) => [name, gl.getUniformLocation(program, name)]));
+				const buffers = Object.fromEntries(shapeNames.map((s) => [s, gl.createBuffer()!]));
+				terrain = { gl, buffers, attrib, uniform };
+				uploadMesh();
+				draw();
+			}
+
+			function uploadMesh() {
+				const { gl, buffers } = terrain!;
+				for (const s of shapeNames) {
+					const source = mesh!.data[s];
+					const out = new Float32Array(source.length);
+					for (let i = 0; i < source.length; i += 2) {
+						const [x, y] = fits[s]([source[i], source[i + 1]])!;
+						out[i] = x;
+						out[i + 1] = y;
+					}
+					gl.bindBuffer(gl.ARRAY_BUFFER, buffers[s]);
+					gl.bufferData(gl.ARRAY_BUFFER, out, gl.STATIC_DRAW);
+				}
+			}
+
+			function drawTerrain() {
+				if (!terrain) return;
+				const { gl, buffers, attrib, uniform } = terrain;
+				gl.viewport(0, 0, terrainCanvas.width, terrainCanvas.height);
+				gl.clearColor(0, 0, 0, 0);
+				gl.clear(gl.COLOR_BUFFER_BIT);
+				// Terrain only in the shapes whose warp passes its fold gate; it fades while morphing to or from the others.
+				const alpha = showDetails ? (terrainShapes.has(from) ? 1 - t : 0) + (terrainShapes.has(to) ? t : 0) : 0;
+				if (alpha <= 0) return;
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffers[from]);
+				gl.vertexAttribPointer(attrib.a, 2, gl.FLOAT, false, 0, 0);
+				gl.bindBuffer(gl.ARRAY_BUFFER, buffers[to]);
+				gl.vertexAttribPointer(attrib.b, 2, gl.FLOAT, false, 0, 0);
+				gl.uniform1f(uniform.t, t);
+				gl.uniform3f(uniform.zoom, zoomT.k, zoomT.x, zoomT.y);
+				gl.uniform2f(uniform.size, width, height);
+				gl.uniform1f(uniform.alpha, alpha);
+				gl.drawElements(gl.TRIANGLES, mesh!.index.length, gl.UNSIGNED_INT, 0);
 			}
 
 			function trace(ctx: CanvasRenderingContext2D, ring: Ring, close: boolean) {
@@ -779,19 +1077,153 @@ const client = es
 			}
 
 			function draw() {
+				drawTerrain();
 				const ctx = prepare(base);
 				ctx.lineJoin = 'round';
+				const k = zoomT.k;
+				strokeLines(ctx, lines.outline.screen, 'rgba(6, 8, 12, 0.5)', 3.5 / k);
 				for (const tr of tracts) {
 					ctx.beginPath();
 					for (const ring of tr.screen) trace(ctx, ring, true);
 					ctx.fillStyle = color(tr);
 					ctx.fill('evenodd');
 				}
-				const k = zoomT.k;
 				strokeLines(ctx, lines.tract.screen, 'rgba(0, 0, 0, 0.3)', 0.3 / Math.sqrt(k));
+				if (showDetails && refLines.length) {
+					strokeRefs(ctx, 'avenue', 'rgba(10, 13, 20, 0.45)', `rgba(255, 246, 228, ${Math.min(0.75, 0.4 + 0.12 * k)})`, 1);
+					strokeRefs(ctx, 'river', 'rgba(8, 14, 26, 0.55)', 'rgba(110, 186, 242, 0.95)', 1.6);
+				}
 				strokeLines(ctx, lines.municipio.screen, 'rgba(255, 255, 255, 0.55)', 0.9 / k);
-				strokeLines(ctx, lines.outline.screen, 'rgba(255, 255, 255, 0.65)', 0.9 / k);
+				strokeLines(ctx, lines.outline.screen, 'rgba(255, 255, 255, 0.6)', 0.9 / k);
+				if (showDetails && refPoints.length) drawLabels(ctx);
 				drawOverlay();
+			}
+
+			// A dark casing under a light core reads on any tract color.
+			function strokeRefs(ctx: CanvasRenderingContext2D, kind: RefLine['kind'], casing: string, core: string, w: number) {
+				ctx.beginPath();
+				for (const l of refLines) if (l.kind === kind) for (const r of l.screen) trace(ctx, r, false);
+				ctx.strokeStyle = casing;
+				ctx.lineWidth = (w + 1.6) / zoomT.k;
+				ctx.stroke();
+				ctx.strokeStyle = core;
+				ctx.lineWidth = w / zoomT.k;
+				ctx.stroke();
+			}
+
+			const SANS = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+			const SERIF = "'Source Serif', Georgia, serif";
+
+			// Names in screen space, most important first; a name that would overlap one already placed waits
+			// for more zoom. Nature in italic serif, people's places in sans, as maps have long done.
+			function drawLabels(ctx: CanvasRenderingContext2D) {
+				const dpr = window.devicePixelRatio || 1;
+				ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+				ctx.textBaseline = 'middle';
+				ctx.lineJoin = 'round';
+				const k = zoomT.k;
+				// The legend and the zoom buttons sit on the map; names never hide under them.
+				const m = base.getBoundingClientRect();
+				const placed = ['#legend', '.zoom-controls'].map((q) => container.querySelector(q)!.getBoundingClientRect())
+					.filter((r) => r.width > 0)
+					.map((r) => [r.left - m.left - 4, r.top - m.top - 4, r.right - m.left + 4, r.bottom - m.top + 4]);
+				const claim = (x0: number, y0: number, x1: number, y1: number) => {
+					if (x0 < 2 || y0 < 2 || x1 > width - 2 || y1 > height - 2) return false;
+					if (placed.some((b) => x0 < b[2] && x1 > b[0] && y0 < b[3] && y1 > b[1])) return false;
+					placed.push([x0, y0, x1, y1]);
+					return true;
+				};
+				const at = (a: ArrayLike<number>, b: ArrayLike<number>, i = 0) =>
+					zoomT.apply([a[2 * i] + (b[2 * i] - a[2 * i]) * t, a[2 * i + 1] + (b[2 * i + 1] - a[2 * i + 1]) * t]);
+				const measure = (text: string, font: string, spacing: string) => {
+					ctx.font = font;
+					(ctx as any).letterSpacing = spacing;
+					return ctx.measureText(text).width;
+				};
+				const write = (text: string, x: number, y: number, fill: string) => {
+					ctx.lineWidth = 3;
+					ctx.strokeStyle = 'rgba(10, 12, 18, 0.82)';
+					ctx.strokeText(text, x, y);
+					ctx.fillStyle = fill;
+					ctx.fillText(text, x, y);
+				};
+				const mark = (x: number, y: number, peak: boolean) => {
+					ctx.beginPath();
+					if (peak) {
+						ctx.moveTo(x, y - 4);
+						ctx.lineTo(x + 4, y + 3);
+						ctx.lineTo(x - 4, y + 3);
+						ctx.closePath();
+					} else {
+						ctx.arc(x, y, 2.6, 0, 2 * Math.PI);
+					}
+					ctx.lineWidth = 1.5;
+					ctx.strokeStyle = 'rgba(10, 12, 18, 0.85)';
+					ctx.stroke();
+					ctx.fillStyle = peak ? 'rgba(236, 226, 206, 0.95)' : '#ffffff';
+					ctx.fill();
+				};
+
+				// Names shrink a little on small maps, so a phone shows the same city, not just its labels.
+				const fs = (px: number) => Math.round(px * Math.max(0.78, Math.min(1, width / 800)) * 2) / 2;
+				ctx.textAlign = 'center';
+				for (const p of refPoints.filter((q) => q.kind === 'municipio').sort((a, b) => b.rank - a.rank)) {
+					const size = fs(p.rank > 1e6 ? 16 : p.rank > 3e5 ? 13.5 : p.rank > 1e5 ? 12 : 10.5);
+					const text = p.label.toUpperCase();
+					const w = measure(text, `600 ${size}px ${SANS}`, '0.08em');
+					const [x, y0] = at(p.screen[from], p.screen[to]);
+					// If a bigger neighbor took the spot, try just above or below before giving up.
+					for (const y of [y0, y0 - size - 4, y0 + size + 4]) {
+						if (claim(x - w / 2 - 2, y - size / 2 - 2, x + w / 2 + 2, y + size / 2 + 2)) {
+							write(text, x, y, p.id === selectedMun ? '#fbbf24' : 'rgba(255, 255, 255, 0.95)');
+							break;
+						}
+					}
+				}
+				for (const p of refPoints) {
+					if (p.kind === 'municipio' || (p.kind === 'landmark' && k < 1.4)) continue;
+					const [x, y] = at(p.screen[from], p.screen[to]);
+					if (p.kind === 'range') {
+						const text = p.label.toUpperCase();
+						const w = measure(text, `italic ${fs(12.5)}px ${SERIF}`, '0.2em');
+						ctx.textAlign = 'center';
+						if (claim(x - w / 2, y - 8, x + w / 2, y + 8)) write(text, x, y, 'rgba(236, 226, 206, 0.7)');
+						continue;
+					}
+					const natural = p.kind === 'peak';
+					const size = fs(natural ? 12 : 11);
+					const w = measure(p.label, natural ? `italic ${size}px ${SERIF}` : `500 ${size}px ${SANS}`, '0px');
+					if (!claim(x - 5, y - size / 2 - 1, x + 8 + w + 2, y + size / 2 + 1)) continue;
+					mark(x, y, natural);
+					ctx.textAlign = 'left';
+					write(p.label, x + 8, y, natural ? 'rgba(236, 226, 206, 0.92)' : 'rgba(255, 255, 255, 0.92)');
+				}
+				ctx.textAlign = 'center';
+				for (const l of refLines) {
+					if (l.kind === 'avenue' && k < 1.6) continue;
+					const font = l.kind === 'river' ? `italic ${fs(11.5)}px ${SERIF}` : `500 ${fs(10.5)}px ${SANS}`;
+					const w = measure(l.name, font, '0px');
+					for (const [piece, i] of l.spots) {
+						const r = l.screen[piece];
+						const last = r[from].length / 2 - 1;
+						const [x, y] = at(r[from], r[to], i);
+						const [x1, y1] = at(r[from], r[to], Math.max(0, i - 2));
+						const [x2, y2] = at(r[from], r[to], Math.min(last, i + 2));
+						let angle = Math.atan2(y2 - y1, x2 - x1);
+						if (angle > Math.PI / 2) angle -= Math.PI;
+						else if (angle < -Math.PI / 2) angle += Math.PI;
+						const c = Math.abs(Math.cos(angle)), s = Math.abs(Math.sin(angle));
+						const hw = (w * c + 12 * s) / 2 + 2, hh = (w * s + 12 * c) / 2 + 2;
+						if (!claim(x - hw, y - hh, x + hw, y + hh)) continue;
+						ctx.save();
+						ctx.translate(x, y);
+						ctx.rotate(angle);
+						write(l.name, 0, 0, l.kind === 'river' ? 'rgba(150, 205, 245, 0.95)' : 'rgba(255, 246, 228, 0.9)');
+						ctx.restore();
+						break;
+					}
+				}
+				(ctx as any).letterSpacing = '0px';
 			}
 
 			function drawOverlay() {
@@ -949,6 +1381,12 @@ const client = es
 				draw();
 				syncURL();
 			});
+			const detailsButton = document.getElementById('details') as HTMLButtonElement;
+			detailsButton.addEventListener('click', () => {
+				showDetails = !showDetails;
+				detailsButton.setAttribute('aria-pressed', String(showDetails));
+				draw();
+			});
 
 			function renderLegend() {
 				const legend = d3.select('#legend');
@@ -958,6 +1396,7 @@ const client = es
 					const stops = d3.range(0, 1.0001, 0.1).map((k) => scale(log ? lo * Math.pow(hi / lo, k) : lo + (hi - lo) * k)).join(', ');
 					legend.append('div').attr('class', 'legend-bar').style('background', `linear-gradient(to right, ${stops})`);
 				};
+				if (v || colorVar === 'density') legend.append('div').attr('class', 'legend-title').text(colorSelect.selectedOptions[0]?.textContent ?? '');
 				if (v) {
 					const [lo, hi] = v.domain;
 					legend.append('div').attr('class', 'legend-item').text(`≤ ${format(v, lo)}`);

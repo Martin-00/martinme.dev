@@ -1,0 +1,324 @@
+{
+ "gates": {
+  "heldout_median_px": 0.5,
+  "heldout_p95_px": 2.0,
+  "visible_folded_frame_pct": 0.05,
+  "landmark_max_m": 300,
+  "site_max_m": 3000
+ },
+ "passes_gates": true,
+ "terrain_shapes": [
+  "land",
+  "people"
+ ],
+ "heldout": {
+  "people": {
+   "median_px": 0.095,
+   "p95_px": 0.72,
+   "max_px": 5.04,
+   "n": 4459
+  },
+  "empty": {
+   "median_px": 0.099,
+   "p95_px": 0.762,
+   "max_px": 8.39,
+   "n": 4459
+  }
+ },
+ "folds": {
+  "people": {
+   "triangles": 2959,
+   "of": 92930,
+   "frame_pct": 0.0578,
+   "visible_frame_pct": 0.0136
+  },
+  "empty": {
+   "triangles": 3802,
+   "of": 92930,
+   "frame_pct": 0.163,
+   "visible_frame_pct": 0.0684
+  }
+ },
+ "anchors": 2073,
+ "field_sweeps": {
+  "people": 481,
+  "empty": 474
+ },
+ "places": [
+  {
+   "id": "Q1778291",
+   "kind": "peak",
+   "name": "Cerro de la Silla",
+   "metres_from_tracts": 1902
+  },
+  {
+   "id": "Q5065013",
+   "kind": "peak",
+   "name": "Cerro de las Mitras",
+   "metres_from_tracts": 1919
+  },
+  {
+   "id": "Q5065019",
+   "kind": "peak",
+   "name": "Cerro del Topo Chico",
+   "metres_from_tracts": 818
+  },
+  {
+   "id": "Q20262772",
+   "kind": "peak",
+   "name": "Chipinque",
+   "metres_from_tracts": 585
+  },
+  {
+   "id": "Q144040",
+   "kind": "range",
+   "name": "Sierra Madre Oriental",
+   "metres_from_tracts": 32734
+  },
+  {
+   "id": "Q383640",
+   "kind": "landmark",
+   "name": "Obispado",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q2265926",
+   "kind": "landmark",
+   "name": "Macroplaza",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q919965",
+   "kind": "landmark",
+   "name": "Parque Fundidora",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q3058827",
+   "kind": "landmark",
+   "name": "Estadio BBVA",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q771800",
+   "kind": "landmark",
+   "name": "Estadio Universitario",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q29716",
+   "kind": "landmark",
+   "name": "UANL",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q1343885",
+   "kind": "landmark",
+   "name": "Tec de Monterrey",
+   "metres_from_tracts": 0
+  },
+  {
+   "id": "Q767660",
+   "kind": "site",
+   "name": "Aeropuerto",
+   "metres_from_tracts": 1848
+  }
+ ],
+ "peaks_inside_tracts": [],
+ "terrain": {
+  "size": [
+   1942,
+   1542
+  ],
+  "elevation_m": [
+   188,
+   3700
+  ]
+ },
+ "avenues": [
+  [
+   "Av. Ignacio Morones Prieto",
+   19.9
+  ],
+  [
+   "Av. Adolfo Ruiz Cortines",
+   18.1
+  ],
+  [
+   "Av. Abraham Lincoln",
+   13.2
+  ],
+  [
+   "Av. Constitución",
+   12.5
+  ],
+  [
+   "Av. Miguel Alemán",
+   12.3
+  ],
+  [
+   "Carretera a Colombia",
+   12.1
+  ],
+  [
+   "Blvd. Miguel de la Madrid",
+   11.9
+  ],
+  [
+   "Av. Eloy Cavazos",
+   11.9
+  ],
+  [
+   "Av. Adolfo Ruiz Cortines",
+   11.0
+  ],
+  [
+   "Av. Eugenio Garza Sada",
+   10.6
+  ],
+  [
+   "Carr. Nacional",
+   9.5
+  ],
+  [
+   "Av. Manuel L. Barragán",
+   9.1
+  ],
+  [
+   "Av. Alfonso Reyes",
+   9.0
+  ],
+  [
+   "Carr. Monterrey-Saltillo",
+   8.3
+  ],
+  [
+   "Av. Benito Juárez",
+   8.2
+  ],
+  [
+   "Carr. Monterrey-Saltillo",
+   8.2
+  ],
+  [
+   "Av. Pablo Livas",
+   8.1
+  ],
+  [
+   "Av. Plutarco Elías Calles",
+   8.0
+  ],
+  [
+   "Av. José Vasconcelos",
+   7.9
+  ],
+  [
+   "Av. Juan Pablo II",
+   7.6
+  ],
+  [
+   "Av. Adolfo López Mateos",
+   7.4
+  ],
+  [
+   "Calz. Francisco I. Madero",
+   7.3
+  ],
+  [
+   "Av. Cristóbal Colón",
+   7.0
+  ],
+  [
+   "Av. Benito Juárez",
+   6.9
+  ],
+  [
+   "Av. Diego Díaz de Berlanga",
+   6.8
+  ],
+  [
+   "Avenida del Teléfono",
+   6.8
+  ],
+  [
+   "Av. Paseo de los Leones",
+   6.6
+  ],
+  [
+   "Av. Coahuila",
+   6.5
+  ],
+  [
+   "Av. Adolfo López Mateos",
+   6.5
+  ],
+  [
+   "Blvd. Julián Treviño Elizondo",
+   6.4
+  ],
+  [
+   "Av. Bernardo Reyes",
+   6.1
+  ],
+  [
+   "Carretera a Monclova",
+   6.1
+  ],
+  [
+   "Av. La Cortina",
+   6.1
+  ],
+  [
+   "Av. Rómulo Garza",
+   5.9
+  ],
+  [
+   "Av. Maestro Israel Cavazos Garza",
+   5.9
+  ],
+  [
+   "Av. Luis Donaldo Colosio Murrieta",
+   5.9
+  ],
+  [
+   "Blvd. Carlos Salinas de Gortari",
+   5.8
+  ],
+  [
+   "Av. Sendero Norte",
+   5.8
+  ],
+  [
+   "Av. Revolución",
+   5.7
+  ],
+  [
+   "Carretera a Monclova",
+   5.7
+  ]
+ ],
+ "rivers": [
+  [
+   "Río Pesquería",
+   169.4
+  ],
+  [
+   "Río Salinas",
+   134.5
+  ],
+  [
+   "Río Santa Catarina",
+   111.5
+  ],
+  [
+   "Río San Juan",
+   89.8
+  ],
+  [
+   "Río La Silla",
+   25.8
+  ]
+ ],
+ "bytes": 169918,
+ "terrain_bytes": 97052
+}
