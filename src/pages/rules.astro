@@ -1,0 +1,386 @@
+---
+import BaseHead from '../components/BaseHead.astro';
+import Footer from '../components/Footer.astro';
+import Header from '../components/Header.astro';
+import { RULES_DESCRIPTION, RULES_TITLE } from '../consts';
+import { Content as Priorities } from '../rules/priorities.md';
+import { Content as Rules, getHeadings } from '../rules/how-i-think-and-build.md';
+
+// The glance list follows the CLAUDE.md itself: each Part with its rules.
+const parts: { slug: string; text: string; rules: { slug: string; text: string }[] }[] = [];
+for (const { depth, slug, text } of getHeadings()) {
+	if (depth === 2) parts.push({ slug, text, rules: [] });
+	if (depth === 3) parts.at(-1)?.rules.push({ slug, text: text.replace(/^\d+\.\s*/, '') });
+}
+
+const prompt = `Read ${new URL('rules.md', Astro.site)} and work by those rules.`;
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`${RULES_TITLE} - Martin M. E.`} description={RULES_DESCRIPTION} />
+		<link rel="alternate" type="text/markdown" href="/rules.md" title={`${RULES_TITLE} (markdown)`} />
+		<style>
+			.rules {
+				--mono: ui-monospace, 'SF Mono', 'JetBrains Mono', Menlo, Consolas, monospace;
+				max-width: 40em;
+				margin: 0 auto;
+				padding: 2.5em 0 1.5em;
+			}
+			.hero h1 {
+				font-size: 2.9em;
+				font-weight: 650;
+				letter-spacing: -0.025em;
+				line-height: 1.05;
+				margin: 0;
+			}
+			.hero .role {
+				font-family: var(--mono);
+				font-size: 0.7em;
+				letter-spacing: 0.04em;
+				color: rgba(255, 255, 255, 0.55);
+				margin: 1em 0 0;
+			}
+			.hero .role .sep {
+				color: var(--accent);
+				margin: 0 0.6em;
+			}
+			.lede {
+				font-size: 1.45em;
+				font-style: italic;
+				line-height: 1.35;
+				color: #ffffff;
+				margin: 1.3em 0 0.8em;
+			}
+			.intro {
+				color: rgba(255, 255, 255, 0.78);
+				margin: 0;
+			}
+			section {
+				margin-top: 3em;
+			}
+			.section-head {
+				display: flex;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 1em;
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: rgba(255, 255, 255, 0.5);
+				padding-bottom: 0.8em;
+				margin-bottom: 1.4em;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+			}
+			.section-head h2 {
+				font: inherit;
+				color: inherit;
+				letter-spacing: inherit;
+				margin: 0;
+			}
+			.section-head a {
+				text-decoration: none;
+			}
+
+			/* At a glance: a stack, highest first, with a rail joining the layers */
+			.glance {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.glance li {
+				position: relative;
+				margin: 0;
+				padding: 0.55em 0 0.55em 1.6em;
+			}
+			.glance li::before {
+				content: '';
+				position: absolute;
+				left: 0;
+				top: 1.15em;
+				width: 7px;
+				height: 7px;
+				border-radius: 50%;
+				background: #0a0f1e;
+				border: 1px solid rgba(255, 255, 255, 0.45);
+			}
+			.glance li:first-child::before {
+				background: var(--accent);
+				border-color: var(--accent);
+				box-shadow: 0 0 8px rgba(251, 191, 36, 0.6);
+			}
+			.glance li:not(:last-child)::after {
+				content: '';
+				position: absolute;
+				left: 3px;
+				top: calc(1.15em + 8px);
+				bottom: calc(-1.15em + 1px);
+				width: 1px;
+				background: rgba(255, 255, 255, 0.14);
+			}
+			.glance .layer {
+				color: #f0f0f0;
+				text-decoration: none;
+				font-size: 1.08em;
+				transition: color 0.15s ease;
+			}
+			.glance .layer:hover {
+				color: var(--accent);
+			}
+			.glance .items {
+				margin: 0.15em 0 0;
+				font-size: 0.82em;
+				line-height: 1.55;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.glance .items a {
+				color: rgba(255, 255, 255, 0.62);
+				text-decoration: none;
+				transition: color 0.15s ease;
+			}
+			.glance .items a:hover {
+				color: var(--accent);
+			}
+			.glance .dot {
+				color: rgba(255, 255, 255, 0.25);
+				margin: 0 0.45em;
+			}
+
+			.note {
+				font-style: italic;
+				color: rgba(255, 255, 255, 0.6);
+				margin: 0 0 0.8em;
+			}
+			.priorities :global(li) {
+				margin-bottom: 0.45em;
+			}
+
+			/* The CLAUDE.md, shown as a file */
+			.file {
+				border: 1px solid var(--glass-border);
+				border-radius: 10px;
+				background: rgba(0, 0, 0, 0.2);
+				overflow: hidden;
+			}
+			.file-tab {
+				display: flex;
+				flex-wrap: wrap;
+				justify-content: space-between;
+				align-items: baseline;
+				gap: 0.3em 1em;
+				padding: 0.75em 1.25em;
+				background: rgba(255, 255, 255, 0.03);
+				border-bottom: 1px solid var(--glass-border);
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.04em;
+				color: rgba(255, 255, 255, 0.5);
+			}
+			.file-name {
+				color: var(--accent);
+				font-weight: 600;
+			}
+			.file-body {
+				padding: 1.1em 1.6em 1.6em;
+			}
+			.file-body :global(p),
+			.file-body :global(li) {
+				color: rgba(255, 255, 255, 0.86);
+			}
+			.file-body :global(h2) {
+				font-family: var(--mono);
+				font-size: 0.68em;
+				font-weight: 600;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				color: var(--accent);
+				margin: 3em 0 0;
+				padding-bottom: 0.8em;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+			}
+			.file-body :global(h3) {
+				font-size: 1.15em;
+				margin: 1.5em 0 0.3em;
+			}
+			/* Part headings already divide the file; the last rule closes it */
+			.file-body :global(hr) {
+				display: none;
+			}
+			.file-body :global(hr + p) {
+				margin: 2.5em 0 0;
+				padding: 1em 1.25em;
+				border-left: 3px solid var(--accent);
+				background: rgba(251, 191, 36, 0.06);
+				border-radius: 0 6px 6px 0;
+			}
+
+			.prompt {
+				display: flex;
+				border: 1px solid var(--glass-border);
+				border-radius: 8px;
+				overflow: hidden;
+				background: rgba(0, 0, 0, 0.3);
+			}
+			.prompt code {
+				all: unset;
+				flex: 1;
+				padding: 0.85em 1em;
+				font-family: var(--mono);
+				font-size: 0.78em;
+				line-height: 1.5;
+				color: var(--accent-light);
+				overflow-wrap: anywhere;
+			}
+			.copy {
+				flex: none;
+				padding: 0 1.3em;
+				border: 0;
+				border-left: 1px solid var(--glass-border);
+				background: rgba(255, 255, 255, 0.05);
+				color: var(--white);
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.12em;
+				text-transform: uppercase;
+				cursor: pointer;
+				transition: background 0.15s ease, color 0.15s ease;
+			}
+			.copy:hover {
+				background: rgba(255, 255, 255, 0.1);
+				color: var(--accent);
+			}
+			.copy:focus-visible {
+				outline: 2px solid var(--accent);
+				outline-offset: -2px;
+			}
+			.history {
+				margin: 3em 0 0;
+				font-family: var(--mono);
+				font-size: 0.68em;
+				letter-spacing: 0.04em;
+				color: rgba(255, 255, 255, 0.45);
+			}
+			@media (max-width: 720px) {
+				.rules {
+					padding-top: 1em;
+				}
+				.hero h1 {
+					font-size: 2.3em;
+				}
+				.lede {
+					font-size: 1.25em;
+				}
+				.file-body {
+					padding: 0.8em 1em 1.2em;
+				}
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<div class="glass-card">
+				<div class="rules">
+					<div class="hero">
+						<h1>{RULES_TITLE}</h1>
+						<p class="role">priorities<span class="sep">·</span>principles<span class="sep">·</span>for people and AI</p>
+						<p class="lede">Rules I run on, not philosophy I admire.</p>
+						<p class="intro">
+							My priorities come first, in order. Below them is the CLAUDE.md that Claude, my AI pair,
+							reads at the start of every session. I keep both public: public things are easier to
+							refine, and any AI I work with can read them in one place.
+						</p>
+					</div>
+
+					<section aria-labelledby="glance">
+						<div class="section-head">
+							<h2 id="glance">At a glance</h2>
+							<a href="/rules.md">plain text →</a>
+						</div>
+						<ol class="glance">
+							<li>
+								<a class="layer" href="#what-im-working-toward">What I'm working toward</a>
+								<p class="items">My goals, in order, and the one value that governs them</p>
+							</li>
+							{
+								parts.map((part) => (
+									<li>
+										<a class="layer" href={`#${part.slug}`}>{part.text}</a>
+										<p class="items">
+											{part.rules.map((rule, i) => (
+												<>
+													{i > 0 && <span class="dot">·</span>}
+													<a href={`#${rule.slug}`}>{rule.text}</a>
+												</>
+											))}
+										</p>
+									</li>
+								))
+							}
+						</ol>
+					</section>
+
+					<section aria-labelledby="what-im-working-toward">
+						<div class="section-head">
+							<h2 id="what-im-working-toward">What I'm working toward</h2>
+							<span>in order</span>
+						</div>
+						<p class="note">When two conflict, the higher one wins.</p>
+						<div class="priorities">
+							<Priorities />
+						</div>
+					</section>
+
+					<section class="file" aria-label="CLAUDE.md">
+						<div class="file-tab">
+							<span class="file-name">CLAUDE.md</span>
+							<span>in Claude's voice: “I” is Claude, “you” is me</span>
+						</div>
+						<div class="file-body">
+							<Rules />
+						</div>
+					</section>
+
+					<section aria-labelledby="for-ai">
+						<div class="section-head">
+							<h2 id="for-ai">For AI</h2>
+							<a href="/llms.txt">llms.txt →</a>
+						</div>
+						<p>
+							Reading this as an AI? The same text is at <a href="/rules.md">/rules.md</a> as markdown,
+							and <a href="/llms.txt">/llms.txt</a> maps the whole site. To hand these rules to any AI,
+							paste this:
+						</p>
+						<div class="prompt">
+							<code>{prompt}</code>
+							<button type="button" class="copy" aria-live="polite">Copy</button>
+						</div>
+					</section>
+
+					<p class="history">
+						Every change to these rules is public:
+						<a href="https://github.com/martinme-dev/martinme.dev/commits/main/src/rules" target="_blank" rel="noopener noreferrer">history on GitHub</a>.
+					</p>
+				</div>
+			</div>
+		</main>
+		<Footer />
+		<script>
+			const button = document.querySelector<HTMLButtonElement>('.copy');
+			const prompt = document.querySelector('.prompt code');
+			button?.addEventListener('click', async () => {
+				try {
+					await navigator.clipboard.writeText(prompt?.textContent ?? '');
+					button.textContent = 'Copied';
+				} catch {
+					// No clipboard access: select the text so it can be copied by hand.
+					if (prompt) getSelection()?.selectAllChildren(prompt);
+					button.textContent = 'Selected';
+				}
+				setTimeout(() => (button.textContent = 'Copy'), 2000);
+			});
+		</script>
+	</body>
+</html>
