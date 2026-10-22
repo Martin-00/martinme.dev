@@ -116,6 +116,52 @@ resource "aws_cloudfront_function" "rewrite_uri" {
 # CloudFront Distribution
 # =============================================================================
 
+# =============================================================================
+# CloudFront Response Headers Policy — browser security headers on every response
+# The site loads nothing from other origins, so the CSP allows only 'self'.
+# 'unsafe-inline' stays because Astro inlines small scripts and styles.
+# =============================================================================
+
+resource "aws_cloudfront_response_headers_policy" "security" {
+  name    = "martinme-dev-security-headers"
+  comment = "HSTS, CSP, nosniff, no framing, strict referrer"
+
+  security_headers_config {
+    strict_transport_security {
+      access_control_max_age_sec = 31536000
+      include_subdomains         = true
+      override                   = true
+    }
+
+    content_security_policy {
+      content_security_policy = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
+      override                = true
+    }
+
+    content_type_options {
+      override = true
+    }
+
+    frame_options {
+      frame_option = "DENY"
+      override     = true
+    }
+
+    referrer_policy {
+      referrer_policy = "strict-origin-when-cross-origin"
+      override        = true
+    }
+  }
+
+  custom_headers_config {
+    items {
+      header   = "Permissions-Policy"
+      value    = "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
+      override = true
+    }
+  }
+}
+
 resource "aws_cloudfront_distribution" "website" {
   enabled             = true
   is_ipv6_enabled     = true
@@ -130,11 +176,12 @@ resource "aws_cloudfront_distribution" "website" {
   }
 
   default_cache_behavior {
-    allowed_methods        = ["GET", "HEAD", "OPTIONS"]
-    cached_methods         = ["GET", "HEAD"]
-    target_origin_id       = "S3-${var.domain_name}"
-    viewer_protocol_policy = "redirect-to-https"
-    compress               = true
+    allowed_methods            = ["GET", "HEAD", "OPTIONS"]
+    cached_methods             = ["GET", "HEAD"]
+    target_origin_id           = "S3-${var.domain_name}"
+    viewer_protocol_policy     = "redirect-to-https"
+    compress                   = true
+    response_headers_policy_id = aws_cloudfront_response_headers_policy.security.id
 
     forwarded_values {
       query_string = false
@@ -211,6 +258,22 @@ resource "aws_route53_record" "www" {
     zone_id                = aws_cloudfront_distribution.website.hosted_zone_id
     evaluate_target_health = false
   }
+}
+
+# CAA: only Amazon may issue certificates for this domain (ACM renews the current one),
+# and nobody may issue a wildcard.
+resource "aws_route53_record" "caa" {
+  zone_id = aws_route53_zone.main.zone_id
+  name    = var.domain_name
+  type    = "CAA"
+  ttl     = 3600
+  records = [
+    "0 issue \"amazon.com\"",
+    "0 issue \"amazontrust.com\"",
+    "0 issue \"awstrust.com\"",
+    "0 issue \"amazonaws.com\"",
+    "0 issuewild \";\"",
+  ]
 }
 
 # =============================================================================
