@@ -1,10 +1,8 @@
 # =============================================================================
 # One-time adoption of the hand-made resources in security.tf into state.
 # Once applied these blocks do nothing; this whole file can be deleted after.
-# The account ID comes from the caller so it stays out of this public repo.
+# The account ID comes from the caller (declared in visits.tf) so it stays out of this public repo.
 # =============================================================================
-
-data "aws_caller_identity" "current" {}
 
 import {
   to = aws_iam_openid_connect_provider.github
