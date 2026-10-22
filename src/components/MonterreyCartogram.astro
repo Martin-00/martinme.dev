@@ -693,6 +693,7 @@ const client = es
 				renderLegend();
 				renderSelection();
 				syncURL();
+				if (selected || selectedMun) setTimeout(zoomToSelection, reducedMotion || targetShape === 'land' ? 0 : 700 + MORPH_MS + 100);
 			}
 
 			function layout() {
@@ -1035,6 +1036,13 @@ const client = es
 				results.hidden = matches.length === 0;
 			}
 
+			function zoomToSelection() {
+				const list = selected ? [selected] : tracts.filter((tr) => tr.municipio === selectedMun);
+				if (!list.length) return;
+				const boxes = list.map((tr) => tr.box[to]);
+				zoomToBox([d3.min(boxes, (b) => b[0])!, d3.min(boxes, (b) => b[1])!, d3.max(boxes, (b) => b[2])!, d3.max(boxes, (b) => b[3])!]);
+			}
+
 			function chooseMun(m: string) {
 				selected = null;
 				selectedMun = m;
@@ -1044,8 +1052,7 @@ const client = es
 				renderSelection();
 				drawOverlay();
 				syncURL();
-				const boxes = tracts.filter((tr) => tr.municipio === m).map((tr) => tr.box[to]);
-				zoomToBox([d3.min(boxes, (b) => b[0])!, d3.min(boxes, (b) => b[1])!, d3.max(boxes, (b) => b[2])!, d3.max(boxes, (b) => b[3])!]);
+				zoomToSelection();
 			}
 
 			searchInput.addEventListener('input', () => {
